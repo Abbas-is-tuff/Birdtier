@@ -1,94 +1,114 @@
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
   <title>Birdtier</title>
   <defs>
-    <radialGradient id="sky" cx="62%" cy="34%" r="80%">
-      <stop offset="0" stop-color="#1b3d5a"/>
-      <stop offset="0.45" stop-color="#0b1a2a"/>
-      <stop offset="1" stop-color="#03060a"/>
+    <radialGradient id="bg" cx="50%" cy="46%" r="75%">
+      <stop offset="0" stop-color="#1a1030"/>
+      <stop offset="0.6" stop-color="#0a0a18"/>
+      <stop offset="1" stop-color="#020308"/>
     </radialGradient>
-    <radialGradient id="planet" cx="70%" cy="20%" r="85%">
-      <stop offset="0" stop-color="#2f86c0"/>
-      <stop offset="0.55" stop-color="#145079"/>
-      <stop offset="1" stop-color="#061827"/>
-    </radialGradient>
-    <radialGradient id="glass" cx="38%" cy="30%" r="75%">
-      <stop offset="0" stop-color="#e8f6ff" stop-opacity="0.32"/>
-      <stop offset="0.5" stop-color="#9fd2ff" stop-opacity="0.08"/>
-      <stop offset="1" stop-color="#9fd2ff" stop-opacity="0.22"/>
-    </radialGradient>
-    <linearGradient id="face" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#ff4a2e"/>
-      <stop offset="1" stop-color="#ff9a5a"/>
+    <linearGradient id="sun" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#ffd23c"/>
+      <stop offset="0.45" stop-color="#ff6a1f"/>
+      <stop offset="1" stop-color="#d4145a"/>
     </linearGradient>
-    <linearGradient id="feathers" x1="0" y1="0" x2="0" y2="1">
-      <stop offset="0" stop-color="#62c24a"/>
-      <stop offset="1" stop-color="#2f8a2c"/>
+    <linearGradient id="shell" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ffffff"/>
+      <stop offset="0.55" stop-color="#c9d3de"/>
+      <stop offset="1" stop-color="#6d7c8d"/>
+    </linearGradient>
+    <linearGradient id="visor" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#3fe0ff"/>
+      <stop offset="0.5" stop-color="#1569c9"/>
+      <stop offset="1" stop-color="#0a1c4a"/>
+    </linearGradient>
+    <linearGradient id="hawk" x1="0" y1="1" x2="0.4" y2="0">
+      <stop offset="0" stop-color="#1f8a2c"/>
+      <stop offset="0.6" stop-color="#5fd63a"/>
+      <stop offset="1" stop-color="#e6ff4a"/>
+    </linearGradient>
+    <linearGradient id="face" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#ff3b1f"/>
+      <stop offset="1" stop-color="#ff8a3c"/>
     </linearGradient>
     <linearGradient id="beak" x1="0" y1="0" x2="1" y2="1">
-      <stop offset="0" stop-color="#fbf1d6"/>
-      <stop offset="1" stop-color="#cdb98f"/>
+      <stop offset="0" stop-color="#fff6dc"/>
+      <stop offset="1" stop-color="#d8bf8a"/>
     </linearGradient>
-    <clipPath id="inside"><circle cx="256" cy="238" r="121"/></clipPath>
-    <clipPath id="front"><rect x="-40" y="256" width="600" height="300"/></clipPath>
-    <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="6"/></filter>
+    <linearGradient id="armor" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#3a4656"/>
+      <stop offset="1" stop-color="#121820"/>
+    </linearGradient>
+    <clipPath id="sunclip"><circle cx="256" cy="236" r="206"/></clipPath>
+    <clipPath id="ringfront"><rect x="-60" y="256" width="640" height="300"/></clipPath>
+    <filter id="glow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="9"/></filter>
+    <filter id="softglow" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="22"/></filter>
   </defs>
 
-  <!-- deep space -->
-  <rect width="512" height="512" fill="url(#sky)"/>
-  <g fill="#ffffff">
-    <circle cx="62" cy="70" r="2.6" opacity="0.9"/><circle cx="128" cy="38" r="1.6" opacity="0.6"/>
-    <circle cx="420" cy="58" r="2.2" opacity="0.85"/><circle cx="470" cy="140" r="1.5" opacity="0.6"/>
-    <circle cx="452" cy="300" r="2" opacity="0.7"/><circle cx="36" cy="200" r="1.5" opacity="0.55"/>
-    <circle cx="96" cy="140" r="1.2" opacity="0.5"/><circle cx="360" cy="24" r="1.4" opacity="0.6"/>
-    <circle cx="486" cy="420" r="1.6" opacity="0.55"/><circle cx="388" cy="470" r="1.2" opacity="0.5"/>
+  <rect width="512" height="512" fill="url(#bg)"/>
+  <g fill="#fff">
+    <circle cx="40" cy="52" r="2.4"/><circle cx="472" cy="44" r="2.8"/><circle cx="486" cy="330" r="2"/>
+    <circle cx="26" cy="300" r="1.8"/><circle cx="96" cy="22" r="1.5"/><circle cx="430" cy="110" r="1.4"/>
+    <circle cx="60" cy="470" r="1.6"/><circle cx="470" cy="480" r="2"/>
   </g>
 
-  <!-- home planet rising at the bottom -->
-  <circle cx="150" cy="700" r="330" fill="url(#planet)"/>
-  <path d="M-10 420 C40 400 70 404 104 420 C132 433 150 428 176 414 C150 446 112 452 70 446 C40 442 10 452 -10 460 Z" fill="#4c9a4a" opacity="0.85"/>
-  <path d="M230 452 C262 440 300 444 330 462 C300 470 268 474 240 470 Z" fill="#4c9a4a" opacity="0.7"/>
-  <circle cx="150" cy="700" r="330" fill="none" stroke="#7cc8ff" stroke-width="7" opacity="0.55"/>
-
-  <!-- orbit, back half (behind the helmet) -->
-  <g transform="rotate(-18 256 256)">
-    <ellipse cx="256" cy="256" rx="214" ry="66" fill="none" stroke="#f0a43c" stroke-width="12" opacity="0.45"/>
+  <!-- blazing sun with scan slits -->
+  <circle cx="256" cy="236" r="214" fill="#ff5a1f" opacity="0.5" filter="url(#softglow)"/>
+  <circle cx="256" cy="236" r="206" fill="url(#sun)"/>
+  <g clip-path="url(#sunclip)" fill="#0a0a18">
+    <rect x="0" y="300" width="512" height="7"/><rect x="0" y="326" width="512" height="10"/>
+    <rect x="0" y="356" width="512" height="13"/><rect x="0" y="390" width="512" height="17"/><rect x="0" y="426" width="512" height="22"/>
   </g>
 
-  <!-- bird astronaut: a peach-faced lovebird in profile, inside the helmet -->
-  <g clip-path="url(#inside)">
-    <rect x="120" y="100" width="280" height="280" fill="#0a1824" opacity="0.55"/>
-    <ellipse cx="236" cy="372" rx="128" ry="82" fill="url(#feathers)"/>
-    <ellipse cx="300" cy="372" rx="62" ry="58" fill="#8fd16a" opacity="0.55"/>
-    <circle cx="246" cy="232" r="84" fill="url(#feathers)"/>
-    <ellipse cx="286" cy="226" rx="60" ry="66" fill="url(#face)"/>
-    <ellipse cx="292" cy="182" rx="38" ry="18" fill="#e8301f" opacity="0.6"/>
-    <circle cx="294" cy="206" r="17" fill="#ffffff" opacity="0.85"/>
-    <circle cx="295" cy="206" r="12" fill="#101010"/>
-    <circle cx="299" cy="201" r="4.2" fill="#ffffff"/>
-    <!-- chunky hooked parrot beak: upper mandible curls down over a small lower mandible -->
-    <path d="M318 200 C340 190 368 198 380 222 C390 242 384 266 366 280 C364 266 358 256 346 252 C334 248 322 244 316 232 C312 222 312 208 318 200 Z" fill="url(#beak)"/>
-    <path d="M318 240 C330 248 342 252 350 260 C354 270 350 280 340 282 C326 280 316 268 314 254 Z" fill="#c9b384"/>
-    <path d="M330 206 C346 204 358 210 364 220" fill="none" stroke="#ffffff" stroke-width="4" stroke-linecap="round" opacity="0.6"/>
-    <!-- suit collar -->
-    <path d="M128 318 C190 290 300 288 372 318 L372 342 C300 314 190 316 128 344 Z" fill="#e9eef3"/>
-    <rect x="234" y="300" width="40" height="16" rx="4" fill="#f0a43c"/>
+  <!-- orbit ring, back half -->
+  <g transform="rotate(-16 256 290)">
+    <ellipse cx="256" cy="290" rx="246" ry="64" fill="none" stroke="#06080e" stroke-width="22"/>
+    <ellipse cx="256" cy="290" rx="246" ry="64" fill="none" stroke="#7df0ff" stroke-width="10"/>
   </g>
 
-  <!-- helmet glass and rim -->
-  <circle cx="256" cy="238" r="121" fill="url(#glass)"/>
-  <path d="M168 186 C184 150 214 128 252 122" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" opacity="0.6"/>
-  <path d="M164 214 C165 206 166 200 168 196" fill="none" stroke="#ffffff" stroke-width="12" stroke-linecap="round" opacity="0.45"/>
-  <circle cx="256" cy="238" r="124" fill="none" stroke="#dfe9f2" stroke-width="11"/>
-  <circle cx="256" cy="238" r="131" fill="none" stroke="#5f7d96" stroke-width="3" opacity="0.8"/>
+  <g stroke="#06080e" stroke-width="8" stroke-linejoin="round" stroke-linecap="round">
+    <!-- armored suit -->
+    <path d="M150 346 L252 326 L336 344 L384 398 L420 520 L70 520 L104 402 Z" fill="url(#armor)"/>
+    <path d="M128 392 L250 360 L366 390 L374 418 L250 388 L122 420 Z" fill="#ff7a1f"/>
+    <path d="M214 440 L250 470 L286 440 L286 468 L250 500 L214 468 Z" fill="#7df0ff"/>
 
-  <!-- orbit, front half (in front of the helmet) with a spacecraft riding it -->
-  <g transform="rotate(-18 256 256)">
-    <ellipse cx="256" cy="256" rx="214" ry="66" fill="none" stroke="#f0a43c" stroke-width="12" clip-path="url(#front)"/>
-    <g transform="translate(408 300)">
-      <circle r="18" fill="#ffd28a" opacity="0.8" filter="url(#glow)"/>
-      <path d="M-36 -2 C-20 -8 -8 -8 4 -6 L4 6 C-8 8 -20 8 -36 2 Z" fill="#ffd28a" opacity="0.75"/>
-      <path d="M2 -8 L22 0 L2 8 Z" fill="#ffffff"/>
-      <rect x="-8" y="-8" width="12" height="16" rx="3" fill="#ffffff"/>
+    <!-- mohawk -->
+    <path d="M318 112 L300 26 L270 100 L236 22 L226 104 L172 40 L184 124 L116 82 L150 158 L72 142 L128 204 L58 220 L132 256 L200 180 Z" fill="url(#hawk)"/>
+
+    <!-- face under the visor -->
+    <path d="M222 262 L404 258 C400 300 372 332 332 346 L250 330 Z" fill="url(#face)"/>
+
+    <!-- helmet shell -->
+    <path d="M138 300 C116 196 170 108 272 104 C344 100 396 140 408 198 L240 198 L222 264 L252 330 L158 350 Z" fill="url(#shell)"/>
+  </g>
+  <!-- helmet stripe and details -->
+  <path d="M166 318 C148 222 196 146 274 138 C330 134 368 156 386 194" fill="none" stroke="#ff5a1f" stroke-width="18"/>
+  <path d="M190 314 C176 236 214 174 276 166 C316 162 344 176 358 196" fill="none" stroke="#06080e" stroke-width="5" opacity="0.55"/>
+  <circle cx="196" cy="300" r="20" fill="#2a3442" stroke="#06080e" stroke-width="7"/>
+  <circle cx="196" cy="300" r="7" fill="#7df0ff"/>
+
+  <!-- visor -->
+  <path d="M240 198 L408 198 C416 222 414 244 404 260 L222 264 Z" fill="url(#visor)" stroke="#06080e" stroke-width="8" stroke-linejoin="round"/>
+  <path d="M254 208 L330 208 L310 228 L250 228 Z" fill="#fff" opacity="0.45"/>
+  <path d="M344 208 L362 208 L342 228 L324 228 Z" fill="#fff" opacity="0.3"/>
+  <!-- glowing angry eye behind the visor -->
+  <path d="M316 224 L392 238 L384 252 C364 258 336 252 322 240 Z" fill="#ffd23c" filter="url(#glow)"/>
+  <path d="M316 224 L392 238 L384 252 C364 258 336 252 322 240 Z" fill="#fff6c8"/>
+  <path d="M352 232 L376 237 L371 249 C362 250 354 246 350 240 Z" fill="#06080e"/>
+
+  <!-- hooked beak -->
+  <g stroke="#06080e" stroke-width="8" stroke-linejoin="round">
+    <path d="M368 300 C384 314 402 318 416 324 C420 344 404 358 386 354 C372 344 364 322 368 300 Z" fill="#c9ae76"/>
+    <path d="M360 262 C394 232 452 240 470 286 C482 318 466 350 440 370 C442 340 430 320 406 314 C380 306 364 290 360 262 Z" fill="url(#beak)"/>
+  </g>
+  <path d="M384 262 C410 250 438 258 450 282" fill="none" stroke="#fff" stroke-width="7" stroke-linecap="round" opacity="0.8"/>
+
+  <!-- orbit ring, front half, with a comet -->
+  <g transform="rotate(-16 256 290)">
+    <g clip-path="url(#ringfront)">
+      <ellipse cx="256" cy="290" rx="246" ry="64" fill="none" stroke="#06080e" stroke-width="22"/>
+      <ellipse cx="256" cy="290" rx="246" ry="64" fill="none" stroke="#7df0ff" stroke-width="10"/>
     </g>
+    <circle cx="120" cy="343" r="26" fill="#7df0ff" opacity="0.8" filter="url(#glow)"/>
+    <circle cx="120" cy="343" r="13" fill="#fff" stroke="#06080e" stroke-width="6"/>
   </g>
 </svg>
