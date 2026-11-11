@@ -6,6 +6,7 @@ import { fmtDist, fmtSpeed, fmtTime, fmtNum, fmtPressure } from './format.js';
 import { ColonyPanel } from './ColonyPanel.jsx';
 import { Settings } from './Settings.jsx';
 import { BodyInfo } from './Database.jsx';
+import { BirdPortrait } from './BirdPortrait.jsx';
 
 const K = ({ a }) => <kbd>{keyName(game.settings.keys[a])}</kbd>;
 const Row = ({ k, v, cls }) => <div className="row"><span>{k}</span><span className={cls}>{v}</span></div>;
@@ -102,6 +103,10 @@ export function Hud({ ui }) {
       </div>
 
       <div className="left">
+        <div className="panel pilotbadge">
+          <BirdPortrait bird={game.pilot} size={34} />
+          <div><div className="k">{h.eva ? 'On EVA' : 'Pilot'} · {game.pilot.role}</div><b>{game.pilot.name}</b></div>
+        </div>
         <div className="panel">
           <div className="h"><span>Flight data</span><span>{h.speedMode}</span></div>
           <div className="pad">

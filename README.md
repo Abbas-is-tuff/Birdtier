@@ -1,8 +1,8 @@
-# Birdtier
+# Birdtier — Beyond the Solar System
 
-*Frontier — Beyond the Solar System*
+**Play it:** https://abbas-is-tuff.github.io/Birdtier/ (desktop browser, keyboard and mouse)
 
-A browser-based space exploration simulator set in the **Kaelis system**, an original fictional star system.
+A browser-based space exploration simulator flown by a crew of bird astronauts set in the **Kaelis system**, an original fictional star system.
 You design rockets, fly them under real Newtonian physics, land on other worlds, walk and drive on their surfaces,
 collect science and build colonies that have to keep their crews alive.
 
@@ -14,14 +14,14 @@ Runs in any modern desktop browser with WebGL2 (Chrome, Edge, Firefox, Safari 17
 
 ### Option A — just play (no install)
 
-Open `frontier-single-file.html` (the bundled build) in a desktop browser. Everything, including all code, is inside that one file.
+Open the link above, or download `docs/index.html` and open it in a desktop browser. Everything, including all code, is inside that one file.
 
 ### Option B — run the project locally
 
 Needs [Node.js](https://nodejs.org) 20 or newer.
 
 ```bash
-cd birdtier
+cd Birdtier
 npm install          # one-time: installs three, react, vite
 npm run dev          # starts the dev server
 ```
@@ -34,9 +34,11 @@ Other scripts:
 |---|---|
 | `npm run build` | Production build into `dist/` (serve it with any static file server, or `npm run preview`) |
 | `npm run build:single` | Builds one self-contained `dist-single/index.html` |
+| `npm run build:pages` | Rebuilds the one-file game into `docs/` for GitHub Pages (commit and push afterwards) |
 | `npm test` | Headless physics checks (orbit stability, Kepler accuracy, a scripted launch to orbit) |
 | `python3 tests/tour.py ascent orbit miro colony screens` | Optional end-to-end browser tour (needs Python Playwright + Chrome, dev server running) |
 | `python3 tests/systems.py` | Forces each random event and drives the rover, reporting console errors |
+| `python3 tests/crew.py` | Picks pilots, checks every perk changes the numbers, and screenshots each bird on EVA |
 
 Saves go to the browser's `localStorage`, so progress persists between sessions on the same browser.
 
@@ -44,7 +46,7 @@ Saves go to the browser's `localStorage`, so progress persists between sessions 
 
 ## First flight (quick start)
 
-1. **New Mission** → the starter rocket *Wayfarer I* is on the pad at Halden Reach.
+1. Pick your astronaut on the main menu, then **New Mission** → the starter rocket *Wayfarer I* is on the pad at Halden Reach.
 2. Press **Z** (full throttle), then **Space** to ignite.
 3. At ~1 km, hold **D** briefly to tip a few degrees east; let the nose follow the prograde marker (SAS **2**).
 4. When **Apoapsis** reaches ~80 km, cut throttle (**X**), time-warp (**.**) to near apoapsis, and burn prograde until **Periapsis** rises above 70 km.
@@ -69,6 +71,24 @@ Saves go to the browser's `localStorage`, so progress persists between sessions 
 | B | Colony panel | Mouse drag / wheel | Orbit / zoom camera |
 
 ---
+
+## The crew
+
+Pick your pilot on the main menu or in the workshop. The pilot appears on EVA as a bird in a glass helmet and
+life-support pack (in their own colours), shows in the flight HUD, and brings one perk that changes the game's numbers.
+
+| Bird | Species | Role | Perk |
+|---|---|---|---|
+| Abbas | Peach-faced lovebird | Commander | +15% science from all experiments |
+| Salman | African grey | Engineer | Repairs take half the time |
+| Cookie | Cockatiel | Scout | Walks 45% faster on EVA, but samples are worth 15% less (fast but lazy) |
+| Lightning | Grey cockatiel | Rover driver | Rover drives 35% faster |
+| Pikachu | Lutino cockatiel | Scientist | Samples and science stations worth 30% more |
+| Silver | Lovebird | Explorer | Triple science for discovering new locations |
+| Aziz | Indian ringneck | Pilot | Jumps 60% higher on EVA |
+| Lemon | Rainbow lorikeet | Quartermaster | Launches cost 15% less |
+
+The crew lives in `src/crew/crew.js`: add a bird by adding an entry with its colours and perk.
 
 ## What is in the game
 
@@ -120,6 +140,7 @@ src/
   physics/     constants, Kepler solver, orbital elements
   world/       system data, star-system state, noise, procedural terrain & biomes
   spacecraft/  part catalogue, designs & Δv maths, the Craft simulation (integrator, staging, systems)
+  crew/        the bird astronaut roster: colours, roles and perks
   surface/     astronaut and rover movement on a body's surface
   colony/      colony life-support and construction
   events/      dynamic event system

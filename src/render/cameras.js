@@ -102,7 +102,7 @@ export class CameraRig {
       if (ctx.entity) this.pitch = Math.max(0.03, this.pitch);
       orbitOff(d, _up, _n, _e);
       this.pitch = pitchSave;
-      _t.copy(_up).multiplyScalar(ctx.entity ? 1.4 : ctx.craftMid || 0);
+      _t.copy(_up).multiplyScalar(ctx.entity ? 0.9 : ctx.craftMid || 0); // bird astronauts stand ~1.4 m tall
       lookAt(_off, _t, _up);
       // keep the camera above the terrain
       if (body.landable && ctx.groundClear !== undefined) {

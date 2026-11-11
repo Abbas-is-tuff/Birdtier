@@ -23,6 +23,7 @@ import { EventSystem } from '../events/events.js';
 import { MISSIONS, newProgress, activeMissions } from '../missions/missions.js';
 import { QUALITY, loadSettings, saveSettings, store } from './settings.js';
 import { Input } from './input.js';
+import { crewById, mod } from '../crew/crew.js';
 import { setUI, getUI } from '../ui/store.js';
 
 export const WARPS = [1, 2, 5, 10, 100, 1000, 10000, 100000];
@@ -79,13 +80,13 @@ class Game {
     this.surfaceRoot = {}; // per-body groups for bases etc.
     this.padAnchor = this.anchor(sys.home, sys.launchSite, 0, -0.02);
     this.padAnchor.add(buildLaunchPad());
-    this.astroMesh = buildAstronaut(); this.roverMesh = buildRover();
-    this.astroMesh.visible = this.roverMesh.visible = false;
-    scene.add(this.astroMesh, this.roverMesh);
+    this.roverMesh = buildRover(); this.roverMesh.visible = false;
+    scene.add(this.roverMesh);
     this.menuBody = sys.home;
     this.input = new Input(this.settings.keys, canvas);
     this.bindInput();
-    this.progress = store.get('progress', null) || newProgress();
+    this.progress = { ...newProgress(), ...(store.get('progress', null) || {}) };
+    this.astroAnim = 0; this.buildAstroMesh();
     setUI({ hasSave: !!store.get('save', null), progress: { ...this.progress } });
     this.mode = 'loading';
     this.last = performance.now();
@@ -148,25 +149,43 @@ class Game {
   newCareer() {
     this.resetWorld(); this.careerLoaded = true;
     this.t = 0; this.system.update(0);
-    this.progress = newProgress();
+    this.progress = { ...newProgress(), pilot: this.progress.pilot };
     this.events = new EventSystem(this);
     store.remove('save');
     this.launch(DEFAULT_DESIGN, true);
   }
+
+  // ---- crew: the selected bird flies every mission, appears on EVA and applies its perk
+  get pilot() { return crewById(this.progress.pilot); }
+  setPilot(id) {
+    const bird = crewById(id);
+    this.progress.pilot = bird.id; this.buildAstroMesh();
+    store.set('progress', this.progress);
+    setUI({ progress: { ...this.progress } });
+    this.toast(`${bird.name} the ${bird.species.toLowerCase()} is now in command`, 'good');
+  }
+  buildAstroMesh() {
+    const vis = this.astroMesh ? this.astroMesh.visible : false;
+    if (this.astroMesh) this.r.scene.remove(this.astroMesh);
+    this.astroMesh = buildAstronaut(this.pilot.look); this.astroMesh.visible = vis;
+    this.r.scene.add(this.astroMesh);
+  }
+  launchCost(stats) { return Math.round(stats.cost * mod(this.pilot, 'launch')); }
 
   // Launch a craft from the pad within the current career.
   launch(design, free = false) {
     const stats = designStats(design);
     if (!stats.valid) return 'Design is not valid.';
     const p = this.progress;
-    const grant = p.funds < stats.cost && JSON.stringify(design.stages) === JSON.stringify(DEFAULT_DESIGN.stages);
-    if (!free && !grant && p.funds < stats.cost) return 'Not enough funds.';
-    if (!free && !grant) p.funds -= stats.cost;
+    const cost = this.launchCost(stats);
+    const grant = p.funds < cost && JSON.stringify(design.stages) === JSON.stringify(DEFAULT_DESIGN.stages);
+    if (!free && !grant && p.funds < cost) return 'Not enough funds.';
+    if (!free && !grant) p.funds -= cost;
     if (!this.events) this.events = new EventSystem(this);
     this.system.update(this.t);
     const c = new Craft(design);
     c.cargo = Math.min(c.cargoCap, p.materials); p.materials -= c.cargo;
-    c.cost = stats.cost;
+    c.cost = cost;
     c.placeOn(this.system.home, this.system.launchSite);
     this.entity = null; this.rover = null; this.astronaut = null;
     this.setCraft(c);
@@ -380,7 +399,7 @@ class Game {
     if (this.progress.sciDone.includes(key)) { this.toast(`You already have a sample from ${biome}`, 'warn'); return; }
     this.progress.sciDone.push(key);
     if (e.body !== this.system.home) this.progress.flags.offworldSample = true;
-    this.addScience(6 * (e.body.def.sciMult || 1), `Surface sample — ${biome}, ${e.body.name}`);
+    this.addScience(Math.round(6 * (e.body.def.sciMult || 1) * mod(this.pilot, 'sci') * mod(this.pilot, 'sample')), `Surface sample — ${biome}, ${e.body.name}`);
   }
   deploySci() {
     const e = this.entity;
@@ -390,7 +409,7 @@ class Game {
     this.progress.sciDone.push(key);
     const d = e.dir.clone().addScaledVector(e.basis(), 1.5 / e.body.radius).normalize();
     this.addDeployed(e.body, d);
-    this.addScience(8 * (e.body.def.sciMult || 1), `Science station — ${biome}, ${e.body.name}`);
+    this.addScience(Math.round(8 * (e.body.def.sciMult || 1) * mod(this.pilot, 'sci') * mod(this.pilot, 'sample')), `Science station — ${biome}, ${e.body.name}`);
   }
   addDeployed(body, dir) { const obj = this.anchor(body, dir); obj.add(buildSciStation()); this.deployed.push({ body, dir, obj }); }
 
@@ -406,7 +425,7 @@ class Game {
       const key = `${s.id}:${b.id}:${sit[0]}`;
       if (this.progress.sciDone.includes(key)) continue;
       this.progress.sciDone.push(key); any = true;
-      this.addScience(Math.round(s.base * sit[1] * (b.def.sciMult || 1)), `${s.label} — ${b.name}, ${sit[0]}`);
+      this.addScience(Math.round(s.base * sit[1] * (b.def.sciMult || 1) * mod(this.pilot, 'sci')), `${s.label} — ${b.name}, ${sit[0]}`);
     }
     if (any) c.ec -= 5; else this.toast(`Nothing new to measure here (${b.name}, ${sit[0]})`, 'warn');
   }
@@ -422,7 +441,7 @@ class Game {
     const biome = body.biomeAt(dir), key = `${body.id}:${biome}`;
     if (this.progress.discoveries.includes(key)) return;
     this.progress.discoveries.push(key);
-    const bonus = 2 * (body.def.sciMult || 1);
+    const bonus = Math.round(2 * (body.def.sciMult || 1) * mod(this.pilot, 'discover'));
     this.progress.science += bonus;
     this.toast(`New location discovered: ${biome}, ${body.name} (+${bonus} science)`, 'good');
   }
@@ -493,7 +512,8 @@ class Game {
     const c = this.craft;
     if (!c || !Object.keys(c.failures).length || this.repair > 0) return;
     if (c.thr.F > 0) { this.toast('Shut down engines before repairs', 'warn'); return; }
-    this.repair = 45; this.toast('Crew is repairing the fault (45 s)…');
+    this.repair = Math.round(45 * mod(this.pilot, 'repair'));
+    this.toast(`${this.pilot.name} is repairing the fault (${this.repair} s)…`);
   }
   recover() {
     const c = this.craft;
@@ -641,6 +661,7 @@ class Game {
     const env = { sunVis: this.sunVis, flux: this.craft.flux };
     if (this.rover && this.rover !== e) this.rover.update(dt, { fwd: 0, turn: 0, jump: false }, env);
     if (!e) return;
+    e.mods = this.pilot.mods;
     const free = this.rig.current === 'free';
     e.update(dt, { fwd: free ? 0 : inp.axis('pitchDown', 'pitchUp'), turn: free ? 0 : inp.axis('yawRight', 'yawLeft'), jump: !free && inp.is('stage') }, env);
     this.discoverClock = (this.discoverClock || 0) + dtReal;
@@ -735,7 +756,14 @@ class Game {
     // surface entities
     const showAstro = flight && this.astronaut && this.mode === 'flight';
     this.astroMesh.visible = !!showAstro;
-    if (showAstro) { this.astroMesh.position.copy(this.astronaut.worldPos(_a)).sub(o); this.astronaut.worldQuat(this.astroMesh.quaternion); }
+    if (showAstro) {
+      this.astroMesh.position.copy(this.astronaut.worldPos(_a)).sub(o); this.astronaut.worldQuat(this.astroMesh.quaternion);
+      // waddle while walking, gentle breathing bob when standing
+      const rig = this.astroMesh.userData.rig, moving = Math.abs(this.astronaut.speed) > 0.1;
+      this.astroAnim += dt * (moving ? 9 + Math.abs(this.astronaut.speed) * 2 : 2);
+      rig.rotation.z = moving ? Math.sin(this.astroAnim) * 0.12 : 0;
+      rig.position.y = moving ? Math.abs(Math.sin(this.astroAnim)) * 0.06 : Math.sin(this.astroAnim) * 0.008;
+    }
     const showRover = flight && this.rover && this.mode === 'flight';
     this.roverMesh.visible = !!showRover;
     if (showRover) { this.roverMesh.position.copy(this.rover.worldPos(_a)).sub(o); this.rover.worldQuat(this.roverMesh.quaternion); }

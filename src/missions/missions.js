@@ -28,7 +28,7 @@ export const MISSIONS = [
 ];
 
 export function newProgress() {
-  return { funds: 25000, science: 0, materials: 0, tier: 0, done: [], discoveries: [], sciDone: [], flags: {}, launches: 0 };
+  return { funds: 25000, science: 0, materials: 0, tier: 0, done: [], discoveries: [], sciDone: [], flags: {}, launches: 0, pilot: 'abbas' };
 }
 export function activeMissions(p) {
   return MISSIONS.filter((m) => !p.done.includes(m.id) && (!m.requires || p.done.includes(m.requires)));

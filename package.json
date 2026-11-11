@@ -1,5 +1,5 @@
 {
-  "name": "frontier-beyond-the-solar-system",
+  "name": "birdtier",
   "private": true,
   "version": "0.1.0",
   "type": "module",
@@ -7,6 +7,7 @@
     "dev": "vite",
     "build": "vite build",
     "build:single": "vite build --mode single",
+    "build:pages": "vite build --mode pages && node -e \"require('fs').writeFileSync('docs/.nojekyll', '')\"",
     "preview": "vite preview",
     "test": "node tests/physics.test.mjs"
   },
@@ -20,6 +21,6 @@
     "vite": "^8.3.8",
     "vite-plugin-singlefile": "^2.3.4"
   },
-  "description": "Frontier \u2014 Beyond the Solar System: a browser space exploration simulator (Three.js + React + Vite).",
+  "description": "Birdtier \u2014 Beyond the Solar System: a browser space exploration simulator starring a crew of bird astronauts (Three.js + React + Vite).",
   "license": "UNLICENSED"
 }

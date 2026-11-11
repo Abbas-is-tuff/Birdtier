@@ -5,11 +5,12 @@ import { Hud } from './Hud.jsx';
 import { Workshop } from './Workshop.jsx';
 import { Database } from './Database.jsx';
 import { Settings } from './Settings.jsx';
+import { CrewPicker } from './BirdPortrait.jsx';
 
 function Loading({ p }) {
   return (
     <div className="loading">
-      <h1 className="brand">FRONTIER</h1>
+      <h1 className="brand">BIRDTIER</h1>
       <div className="brand-sub">Beyond the Solar System</div>
       <div className="bar"><i style={{ width: `${Math.round(p * 100)}%` }} /></div>
       <div className="dim" style={{ marginTop: 10, fontSize: 11 }}>Generating the Kaelis system… {Math.round(p * 100)}%</div>
@@ -22,7 +23,7 @@ function MainMenu({ ui }) {
   const p = ui.progress;
   return (
     <div className="menu">
-      <h1 className="brand" style={{ fontSize: 44 }}>FRONTIER</h1>
+      <h1 className="brand" style={{ fontSize: 44 }}>BIRDTIER</h1>
       <div className="brand-sub">Beyond the Solar System</div>
       <nav>
         <button onClick={() => (ui.hasSave ? setConfirm(true) : game.newCareer())}>New Mission <span>start a new career</span></button>
@@ -37,6 +38,10 @@ function MainMenu({ ui }) {
         <button onClick={() => setUI({ screen: 'database' })}>Planetary Database <span>the Kaelis system</span></button>
         <button onClick={() => setUI({ screen: 'settings' })}>Settings <span>graphics and controls</span></button>
       </nav>
+      <div className="menucrew">
+        <div className="label">Choose your astronaut</div>
+        <CrewPicker pilotId={(p && p.pilot) || 'abbas'} onPick={(id) => game.setPilot(id)} size={40} />
+      </div>
       <div className="foot">
         {p && p.launches > 0 && <div className="mono">Career: {p.funds.toLocaleString()} funds · {p.science} science · {p.done.length} missions complete</div>}
         <div>Desktop browser, keyboard and mouse. Everything you see is generated procedurally on your machine.</div>

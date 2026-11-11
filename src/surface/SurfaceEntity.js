@@ -25,16 +25,18 @@ export class SurfaceEntity {
     const b = this.body, g = b.mu / (b.radius * b.radius);
     let v;
     if (this.kind === 'rover') {
-      const target = this.ec > 0 ? input.fwd * 14 : 0;
+      const m = this.mods || {};
+      const target = this.ec > 0 ? input.fwd * 14 * (m.drive || 1) : 0;
       this.speed += Math.max(-8 * dt, Math.min(8 * dt, target - this.speed));
       this.heading += input.turn * dt * 1.1 * Math.max(-1, Math.min(1, this.speed / 4));
       this.ec = Math.max(0, Math.min(this.ecCap, this.ec + (2.2 * env.sunVis * env.flux - Math.abs(this.speed) * 0.25) * dt));
       v = this.speed;
     } else {
       this.heading += input.turn * dt * 2.2;
-      v = input.fwd * (input.fwd > 0 ? 3.4 : 1.6);
+      const m = this.mods || {};
+      v = input.fwd * (input.fwd > 0 ? 3.4 : 1.6) * (m.walk || 1);
       this.speed = v;
-      if (input.jump && this.y <= 0.001) this.vy = Math.min(3.2, Math.sqrt(2 * g * 0.6) + 1.2);
+      if (input.jump && this.y <= 0.001) this.vy = Math.min(3.2, Math.sqrt(2 * g * 0.6) + 1.2) * (m.jump || 1);
     }
     const f = this.basis();
     if (v) {

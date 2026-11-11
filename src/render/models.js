@@ -160,13 +160,62 @@ export function buildStation() {
   return g;
 }
 
-export function buildAstronaut() {
-  const m = mats(), g = new THREE.Group();
-  g.add(mesh(new THREE.CapsuleGeometry(0.26, 0.55, 6, 12), m.suit, 0, 1.0));
-  g.add(mesh(new THREE.SphereGeometry(0.24, 16, 12), m.suit, 0, 1.62));
-  g.add(mesh(new THREE.SphereGeometry(0.19, 16, 12), m.visor, 0, 1.63, 0.1));
-  g.add(mesh(new THREE.BoxGeometry(0.42, 0.6, 0.22), m.grey, 0, 1.1, -0.28));
-  for (const sx of [-1, 1]) { g.add(mesh(new THREE.CapsuleGeometry(0.1, 0.55, 4, 8), m.suit, sx * 0.14, 0.38)); g.add(mesh(new THREE.CapsuleGeometry(0.08, 0.45, 4, 8), m.suit, sx * 0.38, 1.05)); }
+// A bird astronaut: feathered body, head, beak, wings and tail in the bird's own colours,
+// inside a glass helmet with a suit collar, harness and life-support pack. Feet at y = 0,
+// facing +z. `look` comes from src/crew/crew.js. The inner group `rig` is animated while walking.
+export function buildAstronaut(look) {
+  const m = mats(), g = new THREE.Group(), rig = new THREE.Group();
+  g.add(rig); g.userData.rig = rig;
+  const feather = (c, rough = 0.85) => new THREE.MeshStandardMaterial({ color: c, roughness: rough, metalness: 0 });
+  const sph = (r, mat, x, y, z, sx = 1, sy = 1, sz = 1) => { const o = mesh(new THREE.SphereGeometry(r, 20, 14), mat, x, y, z); o.scale.set(sx, sy, sz); rig.add(o); return o; };
+  const L = look;
+  // body and belly
+  const body = sph(0.34, feather(L.body), 0, 0.62, 0, 1, 1.25, 0.95); body.rotation.x = 0.12;
+  sph(0.27, feather(L.chest), 0, 0.6, 0.12, 0.95, 1.15, 0.8);
+  // head, face mask, nape, neck ring
+  sph(0.24, feather(L.head), 0, 1.08, 0.04);
+  sph(0.195, feather(L.face), 0, 1.06, 0.12, 1, 0.95, 1);
+  if (L.nape) sph(0.2, feather(L.nape), 0, 0.92, -0.04, 1.15, 0.6, 1.0);
+  if (L.ring) { const r = mesh(new THREE.TorusGeometry(0.205, 0.025, 8, 28), feather(L.ring), 0, 0.9, 0.03); r.rotation.x = Math.PI / 2 - 0.25; rig.add(r); }
+  if (L.cheek) for (const sx of [-1, 1]) sph(0.065, feather(L.cheek), sx * 0.15, 1.01, 0.19, 0.5, 1, 1);
+  // eyes with a highlight
+  for (const sx of [-1, 1]) {
+    sph(0.04, new THREE.MeshStandardMaterial({ color: L.eye, roughness: 0.2 }), sx * 0.135, 1.12, 0.19);
+    sph(0.012, new THREE.MeshBasicMaterial({ color: 0xffffff }), sx * 0.15, 1.135, 0.225);
+  }
+  // hooked beak: upper cone pointing forward-down, small lower mandible
+  const beakMat = feather(L.beak, 0.45);
+  const up = mesh(new THREE.ConeGeometry(0.075, 0.17, 14), beakMat, 0, 1.03, 0.29); up.rotation.x = Math.PI / 2 + 0.55; rig.add(up);
+  sph(0.05, beakMat, 0, 0.985, 0.24, 1, 0.7, 1);
+  // crest (cockatiels)
+  if (L.crest) for (let i = 0; i < 4; i++) {
+    const c = mesh(new THREE.ConeGeometry(0.03 - i * 0.004, 0.3 - i * 0.04, 8).translate(0, 0.15 - i * 0.02, 0), feather(L.crest), (i - 1.5) * 0.02, 1.25, 0.06 - i * 0.03);
+    c.rotation.x = -0.55 - i * 0.12; rig.add(c);
+  }
+  // wings folded at the sides
+  for (const sx of [-1, 1]) {
+    const w = sph(0.27, feather(L.wing), sx * 0.29, 0.66, -0.04, 0.33, 1.05, 0.78); w.rotation.z = sx * 0.12;
+    if (L.wingPatch) sph(0.1, feather(L.wingPatch), sx * 0.375, 0.74, 0.02, 0.3, 1, 0.9);
+  }
+  // tail: tapered, pointing down and back
+  const tail = mesh(new THREE.ConeGeometry(0.11, L.tailLen, 10).translate(0, -L.tailLen / 2, 0), feather(L.tail), 0, 0.42, -0.24);
+  tail.scale.set(1, 1, 0.35); tail.rotation.x = 0.75; rig.add(tail);
+  // legs and feet
+  const legMat = feather(0x8b8f93, 0.7);
+  for (const sx of [-1, 1]) {
+    rig.add(mesh(cyl(0.03, 0.035, 0.22, 8), legMat, sx * 0.1, 0.02, 0.04));
+    for (const a of [-0.5, 0, 0.5]) { const t = mesh(new THREE.BoxGeometry(0.03, 0.025, 0.13), legMat, sx * 0.1 + Math.sin(a) * 0.05, 0.015, 0.09); t.rotation.y = a; rig.add(t); }
+  }
+  // space suit: harness band, collar, life-support pack with tanks and antenna
+  const band = mesh(new THREE.TorusGeometry(0.31, 0.035, 8, 32), m.white, 0, 0.52, 0.02); band.rotation.x = Math.PI / 2; band.scale.set(1, 0.92, 1); rig.add(band);
+  const collar = mesh(new THREE.TorusGeometry(0.25, 0.05, 10, 32), m.white, 0, 0.86, 0.03); collar.rotation.x = Math.PI / 2 - 0.15; rig.add(collar);
+  rig.add(mesh(new THREE.BoxGeometry(0.4, 0.46, 0.18), m.white, 0, 0.72, -0.4));
+  for (const sx of [-1, 1]) rig.add(mesh(cyl(0.06, 0.06, 0.4, 12), m.grey, sx * 0.11, 0.52, -0.52));
+  rig.add(mesh(new THREE.BoxGeometry(0.4, 0.05, 0.19), m.accent, 0, 0.9, -0.4));
+  rig.add(mesh(cyl(0.01, 0.01, 0.35, 6), m.metal, 0.14, 0.95, -0.42));
+  // glass helmet (drawn last, no depth write so the bird stays visible inside)
+  const glass = new THREE.MeshPhysicalMaterial({ color: 0xdfefff, roughness: 0.04, metalness: 0, transparent: true, opacity: 0.16, depthWrite: false, clearcoat: 1, clearcoatRoughness: 0.05 });
+  const helmet = new THREE.Mesh(new THREE.SphereGeometry(0.36, 28, 20), glass); helmet.position.set(0, 1.09, 0.06); helmet.renderOrder = 5; rig.add(helmet);
   return g;
 }
 

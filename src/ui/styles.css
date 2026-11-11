@@ -112,3 +112,17 @@ table.kv td:first-child { color: var(--dim); width: 44%; } table.kv td:last-chil
 .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 4px 14px; }
 .keys { display: grid; grid-template-columns: 1fr auto; gap: 3px 12px; align-items: center; }
 .hint { position: absolute; top: 96px; left: 50%; transform: translateX(-50%); padding: 5px 12px; font-size: 12px; background: var(--bg2); border: 1px solid var(--line); }
+
+/* crew */
+.crewpick .crewrow { display: flex; flex-wrap: wrap; gap: 6px; }
+.crewpick.compact .crewrow { gap: 3px; }
+.crewbtn { padding: 0; background: none; border: none; display: flex; flex-direction: column; align-items: center; gap: 3px; cursor: pointer; font-size: 10px; letter-spacing: 0.04em; text-transform: none; color: var(--label); }
+.crewbtn:hover svg { filter: brightness(1.2); }
+.crewbtn.on span { color: var(--amber, #e9a23b); }
+.crewinfo { margin-top: 8px; font-size: 11px; line-height: 1.5; color: var(--text); }
+.crewinfo .dim { font-size: 10px; }
+.menucrew { margin-top: 22px; }
+.menucrew .label { font-size: 10px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--label); margin-bottom: 8px; }
+.pilotbadge { display: flex; align-items: center; gap: 10px; padding: 6px 10px; }
+.pilotbadge .k { font-size: 9px; letter-spacing: 0.14em; color: var(--label); text-transform: uppercase; }
+button.crewbtn, button.crewbtn.on, button.crewbtn:hover:not(:disabled) { background: none; border: none; padding: 0; }

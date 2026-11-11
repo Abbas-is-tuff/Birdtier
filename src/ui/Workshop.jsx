@@ -4,6 +4,7 @@ import { PARTS, CATEGORIES, TIER_COST, TIER_NAMES } from '../spacecraft/parts.js
 import { DEFAULT_DESIGN, designStats, sortParts } from '../spacecraft/designs.js';
 import { store } from '../game/settings.js';
 import { fmtNum } from './format.js';
+import { CrewPicker } from './BirdPortrait.jsx';
 
 const clone = (d) => JSON.parse(JSON.stringify(d));
 
@@ -17,7 +18,8 @@ export function Workshop({ ui }) {
   const update = (fn) => { const d = clone(design); fn(d); d.stages.forEach((s) => { s.parts = sortParts(s.parts); }); setDesign(d); setErr(null); };
   const selIdx = Math.min(sel, design.stages.length - 1);
   const isDefault = JSON.stringify(design.stages) === JSON.stringify(DEFAULT_DESIGN.stages);
-  const affordable = p.funds >= stats.cost || isDefault;
+  const cost = game.launchCost(stats), discount = cost < stats.cost;
+  const affordable = p.funds >= cost || isDefault;
   const nextTier = p.tier + 1;
   return (
     <div className="screen">
@@ -73,13 +75,17 @@ export function Workshop({ ui }) {
 
       <div className="col" style={{ width: 300 }}>
         <div className="panel">
+          <div className="h"><span>Pilot</span><span>{game.pilot.name}</span></div>
+          <div className="pad"><CrewPicker pilotId={p.pilot} onPick={(id) => game.setPilot(id)} size={30} compact /></div>
+        </div>
+        <div className="panel">
           <div className="h"><span>Vessel</span><span className="mono">{fmtNum(p.funds)} ƒ available</span></div>
           <div className="pad">
             <input type="text" value={design.name} maxLength={28} style={{ width: '100%', marginBottom: 8 }} onChange={(e) => { const d = clone(design); d.name = e.target.value; setDesign(d); }} />
             <div className="row"><span>LAUNCH MASS</span><span>{fmtNum(stats.mass)} kg</span></div>
             <div className="row"><span>TOTAL Δv (VACUUM)</span><span>{fmtNum(stats.totalDv)} m/s</span></div>
             <div className="row"><span>LIFT-OFF TWR</span><span className={stats.stages.length && stats.stages[stats.stages.length - 1].twr < 1.05 ? 'bad' : 'good'}>{stats.stages.length ? stats.stages[stats.stages.length - 1].twr.toFixed(2) : '—'}</span></div>
-            <div className="row"><span>COST</span><span className={affordable ? 'amber' : 'bad'}>{fmtNum(stats.cost)} ƒ</span></div>
+            <div className="row"><span>COST</span><span className={affordable ? 'amber' : 'bad'}>{fmtNum(cost)} ƒ{discount ? ` (−${Math.round((1 - cost / stats.cost) * 100)}%)` : ''}</span></div>
             <div className="dim" style={{ fontSize: 11, lineHeight: 1.5, margin: '6px 0' }}>Reaching low Thalen orbit takes roughly 3,600 m/s. Δv figures use the ideal rocket equation.</div>
             {stats.problems.map((x, i) => <div className="problem" key={i}>{x}</div>)}
             {stats.valid && stats.stages[stats.stages.length - 1].twr < 1 && <div className="problem">Lift-off TWR is below 1 — this will not leave the pad.</div>}
