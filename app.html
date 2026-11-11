@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, viewport-fit=cover" />
+<meta name="mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="theme-color" content="#03060a" />
+<link rel="icon" type="image/png" sizes="32x32" href="bt-favicon-32.png" />
+<link rel="icon" type="image/png" sizes="192x192" href="bt-icon-192.png" />
+<link rel="apple-touch-icon" sizes="180x180" href="bt-touch-180.png" />
+<link rel="apple-touch-icon" sizes="167x167" href="bt-touch-167.png" />
+<link rel="apple-touch-icon" sizes="152x152" href="bt-touch-152.png" />
+<link rel="manifest" href="manifest.webmanifest" />
+<meta name="apple-mobile-web-app-title" content="Birdtier" />
+<title>Birdtier — Beyond the Solar System</title>
+<style>
+  /* painted before any script runs, so the page is never blank white */
+  html, body { margin: 0; height: 100%; background: #03060a; color: #d6dde5; font-family: system-ui, -apple-system, sans-serif; }
+  .boot { position: fixed; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 12px; }
+  .boot b { font-size: 34px; letter-spacing: 0.3em; font-weight: 800; }
+  .boot span { font-size: 11px; letter-spacing: 0.3em; color: #6fb7e6; text-transform: uppercase; }
+  #bootdiag { position: fixed; left: 0; right: 0; bottom: 0; z-index: 60; padding: 10px 14px calc(10px + env(safe-area-inset-bottom, 0px)); font: 12px/1.5 ui-monospace, Menlo, monospace; color: #8fa3b5; text-align: center; pointer-events: none; }
+  #bootdiag.stuck { background: #0d141b; border-top: 1px solid #8a3a32; color: #d6dde5; text-align: left; pointer-events: auto; max-height: 60vh; overflow: auto; -webkit-user-select: text; user-select: text; }
+  #bootdiag button { font: 600 13px system-ui, -apple-system, sans-serif; padding: 9px 14px; margin: 8px 8px 0 0; background: #1b2a38; color: #fff; border: 1px solid #3b5368; border-radius: 4px; }
+</style>
+<script>
+  // Start-up reporter. Runs before the game code, so it also catches errors that stop the game
+  // code from running at all. Shows the current start-up step, and if the game has not reached
+  // the menu after 25 seconds, a panel with the step, any errors and the device details.
+  (function () {
+    var t0 = Date.now(), bt = window.__bt = { stage: 'Downloading game', errs: [], ready: false };
+    function note(m) { if (bt.errs.length < 8) bt.errs.push(String(m).slice(0, 400)); }
+    window.addEventListener('error', function (e) {
+      var t = e.target;
+      if (t && t !== window && t.tagName) { note('could not load <' + t.tagName.toLowerCase() + (t.type ? ' type=' + t.type : '') + '> ' + ((t.src || t.href || '(inline)') + '').slice(0, 80)); return; }
+      note((e.message || 'error') + (e.filename ? ' @ ' + e.filename.split('/').pop() + ':' + e.lineno + ':' + e.colno : '') + (e.error && e.error.stack ? '\n' + String(e.error.stack).slice(0, 300) : ''));
+    }, true);
+    window.addEventListener('unhandledrejection', function (e) { var r = e.reason; note('promise: ' + ((r && (r.stack || r.message)) || r)); });
+    var low = function () { try { var s = JSON.parse(localStorage.getItem('frontier.settings') || '{}'); s.quality = 'low'; localStorage.setItem('frontier.settings', JSON.stringify(s)); } catch (x) {} location.reload(); };
+    var stuck = false;
+    var tick = setInterval(function () {
+      var el = document.getElementById('bootdiag'); if (!el) return;
+      if (bt.ready) { el.remove(); clearInterval(tick); return; }
+      var sec = Math.round((Date.now() - t0) / 1000);
+      if ((sec >= 25 || (bt.errs.length && sec >= 8)) && !stuck) {
+        stuck = true; el.className = 'stuck';
+        el.innerHTML = '<b style="color:#e8735f">Birdtier is taking too long to start.</b> Please screenshot this and send it to the developer.<pre id="bd-info" style="white-space:pre-wrap;margin:8px 0 0"></pre>' +
+          '<button id="bd-r">Reload</button><button id="bd-l">Reload on Low graphics</button><button id="bd-x">Hide</button>';
+        document.getElementById('bd-r').onclick = function () { location.reload(); };
+        document.getElementById('bd-l').onclick = low;
+        document.getElementById('bd-x').onclick = function () { el.remove(); clearInterval(tick); };
+      }
+      var gl = 'unknown';
+      try { var c = document.createElement('canvas'); gl = c.getContext('webgl2') ? 'WebGL2 ok' : 'no WebGL2'; } catch (x) { gl = 'WebGL error'; }
+      if (stuck) document.getElementById('bd-info').textContent = 'Step: ' + bt.stage + '\nTime: ' + sec + ' s\nErrors: ' + (bt.errs.join('\n  ') || 'none') +
+        '\nScreen: ' + innerWidth + 'x' + innerHeight + ' @' + devicePixelRatio + '  ' + gl + '  standalone: ' + (navigator.standalone ? 'yes' : 'no') + '\n' + navigator.userAgent;
+      else if (sec >= 3) el.textContent = bt.stage + ' · ' + sec + ' s' + (bt.errs.length ? '  ⚠ ' + bt.errs[0] : '');
+    }, 500);
+  })();
+</script>
+</head>
+<body>
+<canvas id="view"></canvas>
+<div id="labels"></div>
+<div id="root"><div class="boot"><b>BIRDTIER</b><span>Loading…</span></div></div>
+<div id="bootdiag"></div>
+<noscript><p style="padding:20px">Birdtier needs JavaScript turned on.</p></noscript>
+<script type="module" src="/src/main.jsx"></script>
+</body>
+</html>

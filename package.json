@@ -6,8 +6,8 @@
   "scripts": {
     "dev": "vite",
     "build": "vite build",
-    "build:single": "vite build --mode single && node tools/classic-script.mjs dist-single/index.html",
-    "build:pages": "vite build --mode pages && node tools/classic-script.mjs docs/index.html && node -e \"require('fs').writeFileSync('docs/.nojekyll', '')\"",
+    "build:single": "vite build --mode single && node -e \"require('fs').renameSync('dist-single/app.html','dist-single/index.html')\" && node tools/classic-script.mjs dist-single/index.html",
+    "build:pages": "vite build --mode pages && node -e \"require('fs').renameSync('docs/app.html','docs/index.html')\" && node tools/classic-script.mjs docs/index.html && node -e \"require('fs').writeFileSync('docs/.nojekyll', '')\"",
     "preview": "vite preview",
     "test": "node tests/physics.test.mjs"
   },

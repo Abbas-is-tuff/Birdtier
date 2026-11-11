@@ -8,6 +8,8 @@ export default defineConfig(({ mode }) => {
   const single = mode === 'single' || mode === 'pages';
   return {
     plugins: [react(), ...(single ? [viteSingleFile()] : [])],
-    build: { modulePreload: false, outDir: mode === 'pages' ? 'docs' : single ? 'dist-single' : 'dist', emptyOutDir: true, chunkSizeWarningLimit: 2000 },
+    // The source page is app.html; index.html at the repo root only forwards to the built game in docs/.
+    server: { open: '/app.html' },
+    build: { rollupOptions: { input: 'app.html' }, modulePreload: false, outDir: mode === 'pages' ? 'docs' : single ? 'dist-single' : 'dist', emptyOutDir: true, chunkSizeWarningLimit: 2000 },
   };
 });

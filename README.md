@@ -28,7 +28,7 @@ npm install          # one-time: installs three, react, vite
 npm run dev          # starts the dev server
 ```
 
-Then open **http://localhost:5173** in your browser.
+Then open **http://localhost:5173/app.html** in your browser (it opens automatically). The `index.html` at the top of the repo only forwards visitors to the built game in `docs/`.
 
 Other scripts:
 
