@@ -6,10 +6,12 @@ import { Workshop } from './Workshop.jsx';
 import { Database } from './Database.jsx';
 import { Settings } from './Settings.jsx';
 import { CrewPicker } from './BirdPortrait.jsx';
+import logoUrl from '../assets/icon.svg';
 
 function Loading({ p }) {
   return (
     <div className="loading">
+      <img className="logo big" src={logoUrl} alt="" />
       <h1 className="brand">BIRDTIER</h1>
       <div className="brand-sub">Beyond the Solar System</div>
       <div className="bar"><i style={{ width: `${Math.round(p * 100)}%` }} /></div>
@@ -23,8 +25,13 @@ function MainMenu({ ui }) {
   const p = ui.progress;
   return (
     <div className="menu">
-      <h1 className="brand" style={{ fontSize: 44 }}>BIRDTIER</h1>
-      <div className="brand-sub">Beyond the Solar System</div>
+      <div className="menubrand">
+        <img className="logo" src={logoUrl} alt="Birdtier logo" />
+        <div>
+          <h1 className="brand" style={{ fontSize: 44 }}>BIRDTIER</h1>
+          <div className="brand-sub">Beyond the Solar System</div>
+        </div>
+      </div>
       <nav>
         <button onClick={() => (ui.hasSave ? setConfirm(true) : game.newCareer())}>New Mission <span>start a new career</span></button>
         {confirm && (

@@ -1,3 +1,5 @@
+<p align="center"><img src="public/icon.svg" width="180" alt="Birdtier logo: a lovebird astronaut in a glass helmet, circled by an orbit"></p>
+
 # Birdtier — Beyond the Solar System
 
 **Play it:** https://abbas-is-tuff.github.io/Birdtier/ (desktop with keyboard and mouse, or a phone/tablet with touch controls)
