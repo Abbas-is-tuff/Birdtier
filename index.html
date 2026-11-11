@@ -32,7 +32,11 @@
   (function () {
     var t0 = Date.now(), bt = window.__bt = { stage: 'Downloading game', errs: [], ready: false };
     function note(m) { if (bt.errs.length < 8) bt.errs.push(String(m).slice(0, 400)); }
-    window.addEventListener('error', function (e) { note((e.message || 'error') + (e.filename ? ' @ ' + e.filename.split('/').pop() + ':' + e.lineno + ':' + e.colno : '')); }, true);
+    window.addEventListener('error', function (e) {
+      var t = e.target;
+      if (t && t !== window && t.tagName) { note('could not load <' + t.tagName.toLowerCase() + (t.type ? ' type=' + t.type : '') + '> ' + ((t.src || t.href || '(inline)') + '').slice(0, 80)); return; }
+      note((e.message || 'error') + (e.filename ? ' @ ' + e.filename.split('/').pop() + ':' + e.lineno + ':' + e.colno : '') + (e.error && e.error.stack ? '\n' + String(e.error.stack).slice(0, 300) : ''));
+    }, true);
     window.addEventListener('unhandledrejection', function (e) { var r = e.reason; note('promise: ' + ((r && (r.stack || r.message)) || r)); });
     var low = function () { try { var s = JSON.parse(localStorage.getItem('frontier.settings') || '{}'); s.quality = 'low'; localStorage.setItem('frontier.settings', JSON.stringify(s)); } catch (x) {} location.reload(); };
     var stuck = false;
@@ -40,7 +44,7 @@
       var el = document.getElementById('bootdiag'); if (!el) return;
       if (bt.ready) { el.remove(); clearInterval(tick); return; }
       var sec = Math.round((Date.now() - t0) / 1000);
-      if (sec >= 25 && !stuck) {
+      if ((sec >= 25 || (bt.errs.length && sec >= 8)) && !stuck) {
         stuck = true; el.className = 'stuck';
         el.innerHTML = '<b style="color:#e8735f">Birdtier is taking too long to start.</b> Please screenshot this and send it to the developer.<pre id="bd-info" style="white-space:pre-wrap;margin:8px 0 0"></pre>' +
           '<button id="bd-r">Reload</button><button id="bd-l">Reload on Low graphics</button><button id="bd-x">Hide</button>';

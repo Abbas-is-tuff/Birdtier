@@ -8,6 +8,6 @@ export default defineConfig(({ mode }) => {
   const single = mode === 'single' || mode === 'pages';
   return {
     plugins: [react(), ...(single ? [viteSingleFile()] : [])],
-    build: { outDir: mode === 'pages' ? 'docs' : single ? 'dist-single' : 'dist', emptyOutDir: true, chunkSizeWarningLimit: 2000 },
+    build: { modulePreload: false, outDir: mode === 'pages' ? 'docs' : single ? 'dist-single' : 'dist', emptyOutDir: true, chunkSizeWarningLimit: 2000 },
   };
 });
