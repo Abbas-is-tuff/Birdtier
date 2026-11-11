@@ -36,7 +36,7 @@ export class EventSystem {
       this.storm = { until: t + (0.5 + rnd()) * HOUR };
       this.next.storm = this.storm.until + this.exp(9);
       g.dropWarp();
-      g.toast('SOLAR STORM — communications blackout, SAS offline', 'bad');
+      g.toast('SOLAR STORM — communications blackout, SAS offline', 'bad'); if (g.chatter) g.chatter('storm');
       if (c && !c.destroyed) { c.sas = false; if (rnd() < 0.2) this.fail(); }
     }
     // --- equipment failure
@@ -94,7 +94,7 @@ export class EventSystem {
     const [k, msg] = opts[Math.floor(this.rnd() * opts.length)];
     c.failures[k] = true;
     this.g.dropWarp();
-    this.g.toast(`EQUIPMENT FAILURE: ${msg}`, 'bad');
+    this.g.toast(`EQUIPMENT FAILURE: ${msg}`, 'bad'); if (this.g.chatter) this.g.chatter('failure');
   }
 
   spawnRogue() {

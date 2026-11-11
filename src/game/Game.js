@@ -23,11 +23,16 @@ import { EventSystem } from '../events/events.js';
 import { MISSIONS, newProgress, activeMissions } from '../missions/missions.js';
 import { QUALITY, loadSettings, saveSettings, store, touchEnabled } from './settings.js';
 import { Input } from './input.js';
-import { crewById, mod } from '../crew/crew.js';
+import { crewById, mod, CREW, RESCUE_AT } from '../crew/crew.js';
+import { line, squawk, unlockAudio } from '../crew/chatter.js';
+import { Autopilot, transferPlan, totalDv, spendDv } from './autopilot.js';
+import { generateSites, buildSite, updateBeacons, SITE_TYPES } from '../explore/sites.js';
+import { UPGRADE_BY_ID, applyCraftUpgrades, level, nextCost } from '../explore/upgrades.js';
 import { setUI, getUI, updateLayout } from '../ui/store.js';
 
 export const WARPS = [1, 2, 5, 10, 100, 1000, 10000, 100000];
 const Y = new THREE.Vector3(0, 1, 0);
+const fmtDays = (s) => s < 3600 ? `${Math.round(s / 60)} min` : s < 172800 ? `${(s / 3600).toFixed(1)} h` : `${Math.round(s / 86400)} days`;
 const _a = new THREE.Vector3(), _b = new THREE.Vector3(), _c = new THREE.Vector3(), _q = new THREE.Quaternion();
 
 class AssetQueue {
@@ -92,8 +97,14 @@ class Game {
     updateLayout(touchEnabled(this.settings));
     window.addEventListener('resize', () => updateLayout(touchEnabled(this.settings)));
     this.bindInput();
-    this.progress = { ...newProgress(), ...(store.get('progress', null) || {}) };
+    this.progress = this.fixProgress({ ...newProgress(), ...(store.get('progress', null) || {}) });
     this.astroAnim = 0; this.buildAstroMesh();
+    this.ap = new Autopilot(this);
+    this.radioAt = {}; this.idleClock = 0;
+    this.sites = generateSites(sys);
+    for (const site of this.sites) { site.obj = this.anchor(site.body, site.dir, (site.id.length * 1.7) % 6.28); site.obj.add(buildSite(site)); }
+    const wake = () => unlockAudio();
+    window.addEventListener('pointerdown', wake, { passive: true }); window.addEventListener('keydown', wake);
     setUI({ hasSave: !!store.get('save', null), progress: { ...this.progress } });
     this.mode = 'loading';
     stage('Generating planet surfaces 0%');
@@ -157,7 +168,7 @@ class Game {
   newCareer() {
     this.resetWorld(); this.careerLoaded = true;
     this.t = 0; this.system.update(0);
-    this.progress = { ...newProgress(), pilot: this.progress.pilot };
+    this.progress = { ...newProgress() };
     this.events = new EventSystem(this);
     store.remove('save');
     this.launch(DEFAULT_DESIGN, true);
@@ -167,10 +178,181 @@ class Game {
   get pilot() { return crewById(this.progress.pilot); }
   setPilot(id) {
     const bird = crewById(id);
+    if (!this.progress.crew.includes(bird.id)) { this.toast(`${bird.name} is lost on ${this.system.byId[RESCUE_AT[bird.id]].name}. Rescue them to unlock!`, 'warn'); return; }
     this.progress.pilot = bird.id; this.buildAstroMesh();
     store.set('progress', this.progress);
     setUI({ progress: { ...this.progress } });
     this.toast(`${bird.name} the ${bird.species.toLowerCase()} is now in command`, 'good');
+    this.chatter('pick', {}, bird.id, true);
+  }
+  // Older saves: add the new progress fields and make sure the pilot is on the crew.
+  fixProgress(p) {
+    p.seeds = p.seeds || 0; p.found = p.found || []; p.upgrades = p.upgrades || {};
+    p.crew = p.crew && p.crew.length ? p.crew : ['abbas', 'cookie', 'lightning'];
+    if (!p.crew.includes(p.pilot)) p.pilot = p.crew[0];
+    return p;
+  }
+
+  // ---- bird radio chatter
+  chatter(key, vars = {}, birdId = null, force = false) {
+    const id = birdId || this.progress.pilot, now = performance.now();
+    if (!force && this.radioAt[key] && now - this.radioAt[key] < (key === 'idle' ? 0 : 12000)) return;
+    const text = line(id, key, { b: vars.b || (this.craft && this.craft.env.body ? this.craft.env.body.name : '') });
+    if (!text) return;
+    this.radioAt[key] = now; this.idleClock = 0;
+    setUI({ radio: { bird: id, text, until: now + Math.max(6500, text.length * 85), n: (getUI().radio ? getUI().radio.n : 0) + 1 } });
+    if (this.settings.chirps !== false) squawk(id, 0.6);
+  }
+
+  // ---- autopilot and travel
+  autoWarp(i) { if (this.ap.active) this.warpIdx = Math.max(0, Math.min(i, this.maxWarpIdx())); }
+  autopilot(mode) {
+    if (this.ap.active) { this.ap.stop('Autopilot off — you have control'); setUI({ apMode: null }); return; }
+    const err = this.ap.start(mode);
+    if (err) this.toast(err, 'warn'); else this.toast(mode === 'orbit' ? 'Autopilot: flying to orbit' : 'Autopilot: landing', 'info');
+  }
+  travelPlan(targetId) {
+    const c = this.craft, T = this.system.byId[targetId];
+    if (!c || !T || T.type === 'star' || T.type === 'station') return null;
+    const b = c.env.body;
+    const plan = T === b ? null : transferPlan(b, c.env.r, T);
+    return plan ? { ...plan, have: totalDv(c), target: T } : null;
+  }
+  // Fast travel: spends the transfer Δv from the tanks, skips the coast, and arrives in a parking orbit.
+  travelTo(targetId) {
+    const c = this.craft;
+    if (!c || c.destroyed || c.landed || c.docked || this.entity) { this.toast('Fast travel works from orbit', 'warn'); return; }
+    const el = this.orbit, b = c.env.body;
+    if (!el || el.e >= 1 || el.pe < b.radius + (b.atmo ? b.atmo.top : 0) + 1000) { this.toast(`Get into a stable orbit around ${b.name} first (try the Orbit autopilot)`, 'warn'); return; }
+    const plan = this.travelPlan(targetId);
+    if (!plan) return;
+    if (plan.have < plan.dv) { this.toast(`Not enough fuel: the trip to ${plan.target.name} needs ${Math.round(plan.dv)} m/s of Δv, you have ${Math.round(plan.have)} m/s`, 'warn'); return; }
+    this.ap.stop(); this.chatter('travel', { b: plan.target.name }, null, true);
+    spendDv(c, plan.dv);
+    for (const f of c.fx) this.craftFx(f);
+    c.fx.length = 0;
+    this.t += plan.time; c.met += plan.time; this.system.update(this.t);
+    this.placeInOrbit(plan.target, plan.rT);
+    this.flags.space = true;
+    this.warpIdx = 0;
+    this.toast(`Arrived at ${plan.target.name} after ${fmtDays(plan.time)} — used ${Math.round(plan.dv)} m/s of Δv`, 'good');
+    setTimeout(() => this.chatter('arrive', { b: plan.target.name }, null, true), 1500);
+  }
+  placeInOrbit(body, r, rng = Math.random) {
+    const c = this.craft, ang = rng() * Math.PI * 2;
+    const side = _c.set(1, 0, 0).applyQuaternion(body.tiltQ);
+    const dir = side.clone().applyAxisAngle(body.axis, ang).normalize();
+    const v = Math.sqrt(body.mu / r), prograde = _b.copy(body.axis).cross(dir).normalize();
+    c.landed = null; c.docked = null; c.throttle = 0; c.angVel.set(0, 0, 0);
+    c.pos.copy(body.pos).addScaledVector(dir, r);
+    c.vel.copy(body.vel).addScaledVector(prograde, v);
+    c.quat.setFromUnitVectors(Y, prograde);
+    c.computeEnv(this.system); c.beenToSpace = true;
+  }
+  // Assisted landing near a site: drops the craft a few km above it, then the landing autopilot flies the descent.
+  landAtSite(siteId) {
+    const c = this.craft, site = this.sites.find((s) => s.id === siteId);
+    if (!c || !site || c.destroyed || this.entity) return;
+    const b = site.body;
+    if (c.landed && c.landed.body === b) { this.toast('You are already on this world — walk or drive there', 'warn'); return; }
+    if (c.env.body !== b || c.landed) { this.toast(`Get into orbit around ${b.name} first`, 'warn'); return; }
+    const off = new THREE.Vector3(0.6, 0, 0.8).cross(site.dir).normalize().multiplyScalar(140 / b.radius);
+    const d = site.dir.clone().add(off).normalize();
+    const h = b.surfaceH(d) + Math.max(2500, b.radius * 0.012);
+    const up = b.worldDir(d, new THREE.Vector3());
+    c.landed = null; c.docked = null; c.angVel.set(0, 0, 0);
+    c.pos.copy(b.pos).addScaledVector(up, b.radius + h);
+    b.surfaceVel(_a.copy(up).multiplyScalar(b.radius + h), _b);
+    c.vel.copy(_b).addScaledVector(up, -40);
+    c.quat.setFromUnitVectors(Y, up);
+    c.computeEnv(this.system);
+    this.warpIdx = 0; this.rig.startBlend();
+    const err = this.ap.start('land');
+    if (err) this.toast(err, 'warn'); else this.toast(`Assisted descent to the ${SITE_TYPES[site.type].label.toLowerCase()} on ${b.name}`, 'info');
+  }
+  // Quick start: a fresh rocket already in orbit around Thalen (the booster did the hard part).
+  quickStart() {
+    if (!this.careerLoaded) { if (!this.continueCareer()) this.newCareer(); }
+    const err = this.launch(DEFAULT_DESIGN, true);
+    if (err) { this.toast(err, 'warn'); return; }
+    const c = this.craft;
+    c.activateNextStage(); c.activateNextStage();
+    for (const f of c.fx) this.craftFx(f);
+    c.fx.length = 0; c.log.length = 0;
+    this.placeInOrbit(this.system.home, this.system.home.radius + 95000);
+    this.flags.space = true;
+    c.gear = false; this.toasts = []; setUI({ toasts: [] });
+    this.toast('Quick start: you are in orbit around Thalen. Pick a target on the map (M) and press Travel, or Autopilot → Land.', 'good');
+    this.chatter('orbit', { b: 'Thalen' }, null, true);
+  }
+
+  // ---- sites and upgrades
+  collectSite(site) {
+    const p = this.progress;
+    if (p.found.includes(site.id)) return;
+    p.found.push(site.id);
+    const magnet = level(p, 'magnet') ? 1.25 : 1;
+    if (site.type === 'bird') {
+      const bird = crewById(site.bird);
+      if (!p.crew.includes(bird.id)) p.crew.push(bird.id);
+      p.seeds += site.seeds;
+      this.toast(`RESCUED ${bird.name.toUpperCase()} the ${bird.species.toLowerCase()}! ${bird.name} joins your crew (${bird.role}: ${bird.perk})`, 'good');
+      this.chatter('rescue', {}, bird.id, true);
+    } else {
+      const seeds = Math.round(site.seeds * (site.type === 'treasure' ? magnet * mod(this.pilot, 'seeds') : 1));
+      p.seeds += seeds;
+      if (site.science) this.progress.science += site.science;
+      this.toast(`${SITE_TYPES[site.type].label} found on ${site.body.name}: +${seeds} Space Seeds${site.science ? `, +${site.science} science` : ''}`, 'good');
+      this.chatter(site.type === 'ruins' ? 'ruins' : 'treasure', {}, null, true);
+    }
+    store.set('progress', p); setUI({ progress: { ...p } });
+    this.save();
+  }
+  checkSites() {
+    const c = this.craft, e = this.entity, p = this.progress;
+    if (!c || c.destroyed) return;
+    const body = e ? e.body : c.landed ? c.landed.body : null;
+    if (!body) return;
+    const at = e ? e.worldPos(_a) : _a.copy(c.pos), reach = (e ? (e.kind === 'rover' ? 14 : 8) : 35) * (level(p, 'magnet') ? 3 : 1);
+    for (const s of this.sites) {
+      if (s.body !== body || p.found.includes(s.id)) continue;
+      const sp = _b.copy(s.dir).applyQuaternion(body.quat).multiplyScalar(body.radius + body.surfaceH(s.dir)).add(body.pos);
+      if (sp.distanceTo(at) < reach) this.collectSite(s);
+    }
+  }
+  // Nearest unfound site on the body you are on or orbiting (for the HUD pointer).
+  nearestSite() {
+    const c = this.craft, e = this.entity;
+    if (!c) return null;
+    const body = e ? e.body : c.env.body, p = this.progress;
+    const at = e ? e.worldPos(_a) : _a.copy(c.pos);
+    let best = null;
+    for (const s of this.sites) {
+      if (s.body !== body || p.found.includes(s.id)) continue;
+      const sp = _b.copy(s.dir).applyQuaternion(body.quat).multiplyScalar(body.radius + body.surfaceH(s.dir)).add(body.pos);
+      const d = sp.distanceTo(at);
+      if (!best || d < best.d) {
+        const up = _c.subVectors(at, body.pos).normalize(), to = sp.sub(at);
+        const east = new THREE.Vector3().copy(body.axis).cross(up).normalize(), north = new THREE.Vector3().crossVectors(up, east);
+        let brg = Math.atan2(to.dot(east), to.dot(north)) * 57.2958; if (brg < 0) brg += 360;
+        best = { d, id: s.id, type: s.type, bird: s.bird, brg };
+      }
+    }
+    if (!best) return null;
+    const left = this.sites.filter((s) => s.body === body && !p.found.includes(s.id)).length;
+    return { ...best, label: best.type === 'bird' ? `Stranded bird: ${crewById(best.bird).name}` : SITE_TYPES[best.type].label, left };
+  }
+  sitesOn(bodyId) {
+    return this.sites.filter((s) => s.body.id === bodyId).map((s) => ({ id: s.id, type: s.type, label: s.type === 'bird' ? `Stranded bird: ${crewById(s.bird).name}` : SITE_TYPES[s.type].label, found: this.progress.found.includes(s.id) }));
+  }
+  buyUpgrade(id) {
+    const p = this.progress, cost = nextCost(p, id);
+    if (cost === null) return;
+    if (p.seeds < cost) { this.toast(`You need ${cost} Space Seeds (you have ${p.seeds})`, 'warn'); return; }
+    p.seeds -= cost; p.upgrades[id] = level(p, id) + 1;
+    if (this.craft && !this.craft.destroyed) applyCraftUpgrades(this.craft, p, this.pilot.mods, false);
+    store.set('progress', p); setUI({ progress: { ...p } });
+    this.toast(`${UPGRADE_BY_ID[id].name} upgraded to level ${p.upgrades[id]}`, 'good');
   }
   buildAstroMesh() {
     const vis = this.astroMesh ? this.astroMesh.visible : false;
@@ -201,6 +383,7 @@ class Game {
     if (!this.events) this.events = new EventSystem(this);
     this.system.update(this.t);
     const c = new Craft(design);
+    applyCraftUpgrades(c, p, this.pilot.mods, true);
     c.cargo = Math.min(c.cargoCap, p.materials); p.materials -= c.cargo;
     c.cost = cost;
     c.placeOn(this.system.home, this.system.launchSite);
@@ -216,6 +399,7 @@ class Game {
   }
 
   beginFlight() {
+    this.flags = {}; if (this.ap) this.ap.stop();
     this.mode = 'flight'; this.paused = false; this.warpIdx = 0; this.repair = 0;
     this.rig.map = false; this.rig.mode = 'chase'; this.rig.yaw = Math.PI; this.rig.pitch = 0.12; this.rig.blend = 1;
     this.map.setVisible(false);
@@ -248,7 +432,7 @@ class Game {
   restore(d) {
     this.resetWorld(); this.careerLoaded = true;
     this.t = d.t; this.system.update(this.t);
-    this.progress = { ...newProgress(), ...JSON.parse(JSON.stringify(d.progress)) };
+    this.progress = this.fixProgress({ ...newProgress(), ...JSON.parse(JSON.stringify(d.progress)) });
     this.events = new EventSystem(this); this.events.load(d.events);
     this.colonies = d.colonies.map((c) => Colony.fromJSON(c, this.system));
     for (const s of d.deployed) this.addDeployed(this.system.byId[s.body], new THREE.Vector3().fromArray(s.dir));
@@ -256,7 +440,7 @@ class Game {
     this.target = d.target ? this.system.byId[d.target] : null;
     for (const [id, w] of d.weather || []) this.system.byId[id].weather = w;
     let craft = null;
-    if (d.craft) { craft = Craft.fromJSON(JSON.parse(JSON.stringify(d.craft)), this.system); craft.cost = d.craft.cost || 0; }
+    if (d.craft) { craft = Craft.fromJSON(JSON.parse(JSON.stringify(d.craft)), this.system); craft.cost = d.craft.cost || 0; applyCraftUpgrades(craft, this.progress, this.pilot.mods, false); }
     this.setCraft(craft);
     if (d.rover) { const r = d.rover; this.rover = new SurfaceEntity('rover', this.system.byId[r.body], new THREE.Vector3().fromArray(r.dir), r.heading); this.rover.ec = r.ec; }
     this.basesDirty = true;
@@ -331,7 +515,13 @@ class Game {
   }
   setSas(m) { const c = this.craft; if (!c || this.entity) return; if (this.events.storm) { this.toast('SAS is offline during the solar storm', 'warn'); return; } c.sasMode = m; c.sas = true; }
   setThrottle(v) { if (this.craft && !this.entity) this.craft.throttle = Math.max(0, Math.min(1, v)); }
-  stage() { if (this.craft && !this.entity && !this.paused) this.craft.activateNextStage(); }
+  stage() {
+    const c = this.craft;
+    if (!c || this.entity || this.paused) return;
+    const onPad = !!c.landed && !c.stage;
+    c.activateNextStage();
+    if (onPad && c.stage) this.chatter('launch', {}, null, true);
+  }
 
   maxWarpIdx() {
     const c = this.craft;
@@ -397,6 +587,7 @@ class Game {
     this.entity = e; this.astronaut = e; this.warpIdx = Math.min(this.warpIdx, 3);
     this.rig.startBlend(); this.rig.pitch = 0.25;
     this.toast('EVA — W/S walk, A/D turn, Space jump, V sample, O science station, F board');
+    this.chatter('eva');
     this.discover(b, e.dir);
   }
 
@@ -417,6 +608,7 @@ class Game {
     if (this.progress.sciDone.includes(key)) { this.toast(`You already have a sample from ${biome}`, 'warn'); return; }
     this.progress.sciDone.push(key);
     if (e.body !== this.system.home) this.progress.flags.offworldSample = true;
+    this.chatter('sample');
     this.addScience(Math.round(6 * (e.body.def.sciMult || 1) * mod(this.pilot, 'sci') * mod(this.pilot, 'sample')), `Surface sample — ${biome}, ${e.body.name}`);
   }
   deploySci() {
@@ -462,6 +654,7 @@ class Game {
     const bonus = Math.round(2 * (body.def.sciMult || 1) * mod(this.pilot, 'discover'));
     this.progress.science += bonus;
     this.toast(`New location discovered: ${biome}, ${body.name} (+${bonus} science)`, 'good');
+    this.chatter('discover');
   }
 
   // ---- colonies
@@ -605,6 +798,11 @@ class Game {
     const dtGame = dtReal * WARPS[this.warpIdx];
     // controls
     const piloting = !this.entity && this.rig.current !== 'free' && !c.destroyed;
+    if (this.ap.active) {
+      const touched = piloting && (inp.axis('pitchDown', 'pitchUp') || inp.axis('yawRight', 'yawLeft') || inp.axis('rollRight', 'rollLeft') || inp.axis('throttleUp', 'throttleDown'));
+      if (touched || this.paused) this.ap.stop(touched ? 'Autopilot off — you have control' : null);
+      else this.ap.update();
+    }
     const k = c.ctrl;
     k.pitch = piloting ? inp.axis('pitchDown', 'pitchUp') : 0;
     k.yaw = piloting ? inp.axis('yawRight', 'yawLeft') : 0;
@@ -612,7 +810,7 @@ class Game {
     k.tx = piloting ? inp.axis('rcsRight', 'rcsLeft') : 0;
     k.ty = piloting ? inp.axis('rcsFwd', 'rcsBack') : 0;
     k.tz = piloting ? inp.axis('rcsDown', 'rcsUp') : 0;
-    if (piloting) c.throttle = Math.max(0, Math.min(1, c.throttle + inp.axis('throttleUp', 'throttleDown') * dtReal * 0.8));
+    if (piloting && !this.ap.active) c.throttle = Math.max(0, Math.min(1, c.throttle + inp.axis('throttleUp', 'throttleDown') * dtReal * 0.8));
     // environment inputs for power generation
     this.updateEnvironment();
     // integrate
@@ -649,6 +847,8 @@ class Game {
       if (this.repair <= 0) { c.failures = {}; this.toast('Repairs complete — all systems nominal', 'good'); }
     }
     this.updateEntities(Math.min(dtGame, 0.25), dtReal);
+    this.checkSites();
+    this.flightChatter(dtReal);
     // world systems
     const env = { flux: 1, sunVis: 1, storm: !!this.events.storm, weather: false };
     const out = [];
@@ -675,6 +875,19 @@ class Game {
     if (c.destroyed && !getUI().lost) { this.dropWarp(); this.persist(); setUI({ lost: c.destroyReason }); }
   }
 
+  // Moments the pilot talks about on the radio.
+  flightChatter(dtReal) {
+    const c = this.craft;
+    if (!c || c.destroyed) return;
+    const f = this.flags || (this.flags = {});
+    if (c.beenToSpace && !f.space) { f.space = true; if (!c.landed) this.chatter('space'); }
+    const st = c.stage;
+    const low = st && st.liquid.length && st.fuelCap > 0 && st.fuel / st.fuelCap < 0.12 && c.activeStage === 0;
+    if (low && !f.low) { f.low = true; this.chatter('lowFuel'); } else if (!low) f.low = false;
+    this.idleClock += dtReal;
+    if (this.idleClock > 75 + Math.random() * 60 && !this.paused) this.chatter('idle');
+  }
+
   updateEnvironment() {
     const c = this.craft, sys = this.system, info = {};
     c.sunVis = sys.sunVisibility(c.pos, info);
@@ -690,7 +903,8 @@ class Game {
     const env = { sunVis: this.sunVis, flux: this.craft.flux };
     if (this.rover && this.rover !== e) this.rover.update(dt, { fwd: 0, turn: 0, jump: false }, env);
     if (!e) return;
-    e.mods = this.pilot.mods;
+    const pm = this.pilot.mods;
+    e.mods = { ...pm, drive: (pm.drive || 1) * (1 + 0.3 * level(this.progress, 'rover')), jet: level(this.progress, 'jetpack') };
     const free = this.rig.current === 'free';
     e.update(dt, { fwd: free ? 0 : inp.axis('pitchDown', 'pitchUp'), turn: free ? 0 : inp.axis('yawRight', 'yawLeft'), jump: !free && inp.is('stage') }, env);
     this.discoverClock = (this.discoverClock || 0) + dtReal;
@@ -704,16 +918,20 @@ class Game {
       try { ok = m.check(this); } catch { ok = false; }
       if (!ok) continue;
       p.done.push(m.id);
-      p.funds += m.reward.funds || 0; p.science += m.reward.science || 0; p.materials += m.reward.materials || 0;
+      p.funds += Math.round((m.reward.funds || 0) * mod(this.pilot, 'funds')); p.science += m.reward.science || 0; p.materials += m.reward.materials || 0;
       const r = m.reward;
       this.toast(`MISSION COMPLETE: ${m.title} — +${(r.funds || 0).toLocaleString()} funds, +${r.science || 0} science${r.materials ? `, +${r.materials} materials` : ''}`, 'good');
     }
-    if (this.craft.landed && !this.craft.wasLanded) this.discover(this.craft.landed.body, this.craft.landed.dir);
+    if (this.craft.landed && !this.craft.wasLanded) {
+      this.discover(this.craft.landed.body, this.craft.landed.dir);
+      if (this.craft.beenToSpace || this.craft.landed.body !== this.system.home) this.chatter(this.craft.landed.body.terrain.sea && this.craft.landed.body.rawH(this.craft.landed.dir) < 0 ? 'splash' : 'land', { b: this.craft.landed.body.name });
+    }
     this.craft.wasLanded = !!this.craft.landed;
   }
 
   craftFx(f) {
     const c = this.craft, m = this.model;
+    if (f === 'jettison') this.chatter('stage');
     if (f === 'jettison' && m.stageGroups.length > c.stages.length) {
       const g = m.dropStage();
       this.r.scene.add(g);
@@ -765,6 +983,7 @@ class Game {
     const mapOn = rig.map;
     this.starView.sync(o, this.t, this.events && this.events.storm);
     for (const id in this.views) this.views[id].sync(o, sys.star, this.t);
+    updateBeacons(this.sites, cam.position, performance.now() / 1000, this.progress.found, mapOn);
     for (const s of this.stationViews) { s.group.position.subVectors(s.body.pos, o); s.group.quaternion.setFromUnitVectors(Y, _a.subVectors(s.body.pos, s.body.parent.pos).normalize()); }
     for (const b of this.belts) b.sync(o, this.t, mapOn);
 
@@ -919,9 +1138,19 @@ class Game {
     }
     let station = null;
     for (const s of this.system.stations) { const d = s.pos.distanceTo(c.pos); if (d < 5000) station = { name: s.name, dist: d, rel: _b.subVectors(c.vel, s.vel).length() }; }
+    let near = this.nearestSite();
+    if (near && (c.landed || ent || e.radarAlt < 60000)) {
+      const fwd = _b.set(0, 0, -1).applyQuaternion(this.rig.quat);
+      const up = e.up, east2 = _c.copy(b.axis).cross(up).normalize(), north2 = new THREE.Vector3().crossVectors(up, east2);
+      const camBrg = Math.atan2(fwd.dot(east2), fwd.dot(north2)) * 57.2958;
+      near = { ...near, rel: near.brg - camBrg - 90 };
+    } else near = null;
+    const orbiting = !c.landed && !c.docked && el.e < 1 && el.pe > b.radius + (b.atmo ? b.atmo.top : 0) + 1000;
     setUI({
       progress: { ...this.progress },
       hud: {
+        auto: this.ap.active ? (this.ap.mode === 'orbit' ? 'to orbit' : 'landing') + (this.ap.phase ? ` (${this.ap.phase})` : '') : null,
+        find: near, orbiting, landable: b.landable, totalDv: totalDv(c),
         t: this.t, met: c.met, body: b.name, bodyId: b.id, situation,
         alt: e.alt, radar: e.terrainKnown ? Math.max(0, e.radarAlt) : null,
         speed: surfMode ? e.vRelSurf.length() : e.vOrb.length(), speedMode: surfMode ? 'Surface' : 'Orbital',

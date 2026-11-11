@@ -37,6 +37,14 @@ export class SurfaceEntity {
       v = input.fwd * (input.fwd > 0 ? 3.4 : 1.6) * (m.walk || 1);
       this.speed = v;
       if (input.jump && this.y <= 0.001) this.vy = Math.min(3.2, Math.sqrt(2 * g * 0.6) + 1.2) * (m.jump || 1);
+      // jetpack upgrade: keep holding Jump in the air to fly; it refills on the ground
+      const jetMax = 3 * (m.jet || 0);
+      if (this.jet === undefined || this.y <= 0.001) this.jet = jetMax;
+      this.jetting = false;
+      if (jetMax && input.jump && this.y > 0.25 && this.jet > 0) {
+        this.vy = Math.min(this.vy + (g + 7) * dt, 9); this.jet -= dt; this.jetting = true;
+      }
+      if (this.y > 0.5 && jetMax) v *= 2.2;
     }
     const f = this.basis();
     if (v) {

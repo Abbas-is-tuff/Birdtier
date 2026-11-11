@@ -56,6 +56,7 @@ export class Craft {
     }
     const bottom = this.stages[this.stages.length - 1];
     this.has.legs = bottom.parts.some((id) => PARTS[id].legs);
+    ecCap *= this.ecMul || 1;
     Object.assign(this, { ecCap, monoCap, torque, rcsThrust, solar, cargoCap });
     this.length = Math.max(len, 1.9);
     this.belowOrigin = len - this.stages[0].h;
@@ -66,7 +67,7 @@ export class Craft {
 
   get legsDown() { return this.has.legs && this.gear; }
   get bottomOffset() { return this.belowOrigin + (this.legsDown ? 0.9 : 0.15); }
-  get crashTol() { return this.legsDown ? 12 : 7; }
+  get crashTol() { return (this.legsDown ? 12 : 7) + (this.tolBonus || 0); }
   cda() {
     const base = 3.8 * (this.stages.length > 1 ? 0.35 : 0.9);
     return base + (this.panels && this.solar > 0 ? 6 : 0) + this.chuteOpen * 420;
@@ -109,7 +110,7 @@ export class Craft {
       for (const e of st.liquid) {
         const isp = e.ispVac + (e.ispSL - e.ispVac) * pr;
         const f = e.thrust * (isp / e.ispVac) * this.throttle * (this.failures.engine ? 0.5 : 1);
-        o.F += f; o.md += f / (isp * G0);
+        o.F += f; o.md += f / (isp * (this.ispMul || 1) * G0);
       }
     }
     if (st.solid > 0) {
@@ -134,7 +135,7 @@ export class Craft {
     const st = this.stage;
     if (!st || !st.liquid.length || st.fuel <= 0) return 0;
     const m = this.mass();
-    return st.liquid[0].ispVac * G0 * Math.log(m / (m - st.fuel));
+    return st.liquid[0].ispVac * (this.ispMul || 1) * G0 * Math.log(m / (m - st.fuel));
   }
 
   say(msg, kind = 'info') { this.log.push({ msg, kind }); }
@@ -244,6 +245,7 @@ export class Craft {
   // ---- attitude --------------------------------------------------------------------------
   holdTarget(e, out) {
     const m = this.sasMode;
+    if (m === 'ap') return this.apDir ? out.copy(this.apDir).normalize() : null; // pointed by the autopilot
     if (m === 'up') return out.copy(e.up);
     const useSurf = e.inAtmo || e.radarAlt < 20000;
     out.copy(useSurf ? e.vRelSurf : e.vOrb);
@@ -370,7 +372,7 @@ export class Craft {
   toJSON() {
     return {
       design: this.design, n: this.stages.length, st: this.stages.map((s) => [s.fuel, s.solid, s.ignited]),
-      activeStage: this.activeStage, throttle: this.throttle, sas: this.sas, sasMode: this.sasMode, rcs: this.rcs,
+      activeStage: this.activeStage, throttle: this.throttle, sas: this.sas, sasMode: this.sasMode === 'ap' ? 'stab' : this.sasMode, rcs: this.rcs,
       gear: this.gear, panels: this.panels, chute: this.chute, chuteOpen: this.chuteOpen, ec: this.ec, mono: this.mono,
       cargo: this.cargo, failures: this.failures, met: this.met, beenToSpace: this.beenToSpace, roverDeployed: this.roverDeployed,
       pos: this.pos.toArray(), vel: this.vel.toArray(), quat: this.quat.toArray(), angVel: this.angVel.toArray(),

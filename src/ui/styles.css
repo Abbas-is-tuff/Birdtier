@@ -256,3 +256,28 @@ html.compact .logo { width: 52px; height: 52px; }
 html.compact .logo.big { width: 96px; height: 96px; }
 html.compact .menubrand { gap: 12px; }
 @media (max-height: 460px) { html.compact .menubrand .logo { width: 40px; height: 40px; } }
+
+/* ---- crew lock, radio, site pointer, explore, upgrades */
+.crewbtn .pwrap { position: relative; display: inline-block; line-height: 0; }
+.crewbtn.locked svg { filter: grayscale(1) brightness(0.45); }
+.crewbtn.locked .pwrap i { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font: 800 16px var(--mono); color: #cfd8e3; font-style: normal; line-height: 1; }
+.radio { position: absolute; top: 64px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 10px; padding: 7px 14px 7px 8px; max-width: min(560px, 70vw); animation: radioIn 0.25s ease-out; border-color: #3d6a3f; }
+.radio .k { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: #7fd18a; }
+.radio .said { font-size: 14px; line-height: 1.35; color: var(--text); }
+@keyframes radioIn { from { opacity: 0; transform: translate(-50%, -8px); } to { opacity: 1; transform: translate(-50%, 0); } }
+.sitepointer { position: absolute; top: 64px; right: 270px; display: flex; align-items: center; gap: 10px; padding: 6px 12px; font-size: 12px; }
+.sitepointer .arrow { display: inline-block; font-size: 24px; transition: transform 0.2s linear; }
+.sitepointer .k { font-size: 9px; letter-spacing: 0.12em; text-transform: uppercase; }
+.travel, .sites { border-bottom: 1px solid var(--line); margin-bottom: 8px; font-size: 12px; display: flex; flex-direction: column; gap: 5px; align-items: flex-start; }
+.travel .k, .sites .k { font-size: 9px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--label); }
+.siteRow { display: flex; align-items: center; gap: 8px; width: 100%; }
+.siteRow span:nth-child(2) { flex: 1; }
+.upgrades { display: flex; flex-direction: column; gap: 8px; max-height: 60vh; }
+.upg { display: flex; align-items: center; gap: 12px; padding: 8px; border: 1px solid var(--line); border-radius: 4px; }
+.upg .ic { font-size: 26px; width: 34px; text-align: center; }
+.upg .tx { flex: 1; font-size: 12px; line-height: 1.45; }
+html.compact .radio { top: calc(46px + var(--st)); max-width: 62vw; padding: 5px 10px 5px 6px; }
+html.compact .radio svg { width: 34px; height: 34px; }
+html.compact .radio .said { font-size: 12px; }
+html.compact .sitepointer { top: auto; right: auto; left: calc(144px + var(--sl)); top: calc(4px + var(--st)); padding: 4px 8px; font-size: 11px; display: none; }
+html.compact .hud .sitepointer { display: flex; top: calc(150px + var(--st)); left: calc(4px + var(--sl)); }

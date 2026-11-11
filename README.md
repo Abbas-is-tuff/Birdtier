@@ -37,7 +37,8 @@ Other scripts:
 | `npm run build` | Production build into `dist/` (serve it with any static file server, or `npm run preview`) |
 | `npm run build:single` | Builds one self-contained `dist-single/index.html` |
 | `npm run build:pages` | Rebuilds the one-file game into `docs/` for GitHub Pages (commit and push afterwards) |
-| `npm test` | Headless physics checks (orbit stability, Kepler accuracy, a scripted launch to orbit) |
+| `npm test` | Headless physics checks plus autopilot flights (pad to orbit, landings on Miro, Thalen, Ordun and Pell) |
+| `python3 tests/fun.py` | Browser play-through: Quick Start, fast travel, assisted landing, bird rescue, upgrade shop |
 | `python3 tests/tour.py ascent orbit miro colony screens` | Optional end-to-end browser tour (needs Python Playwright + Chrome, dev server running) |
 | `python3 tests/systems.py` | Forces each random event and drives the rover, reporting console errors |
 | `python3 tests/mobile.py` | Phone emulation (touch, landscape and portrait): throttle, staging, joystick, EVA, sheets, workshop |
@@ -93,9 +94,32 @@ Full screen is in the main menu and the pause menu (Android browsers; on iPhone,
 
 ---
 
+## Quick and easy play
+
+- **Quick Start** (main menu): a fresh rocket already in orbit around Thalen.
+- **Autopilot**: *Auto → Orbit* flies a gravity turn to a stable orbit; *Auto → Land* brakes and lands on
+  the world below (on Thalen's thick air it can drop to the capsule and use the parachute). It flies the real
+  physics with real fuel; touching any flight control hands control back to you.
+- **Fast travel**: open the map (M), pick a planet or moon, and press *Travel*. It shows the Δv the trip needs
+  and what you have, spends that fuel, skips the coast and arrives in a parking orbit.
+- **Land here**: from orbit, each place to find on a world has a *Land here* button for an assisted descent next to it.
+
+## Things to find
+
+Every solid world hides glowing beacons you can see from orbit:
+
+- **Seed caches** (gold): Space Seeds to spend in **Upgrades** (engines, tanks, batteries, landing legs,
+  a bird jetpack, turbo rover, seed magnet).
+- **Alien ruins** (purple): Space Seeds and science.
+- **Stranded birds** (green): rescue them on EVA and they join your crew.
+
+Two are a short walk from the launch pad. A pointer on screen shows the nearest one and how far it is.
+
 ## The crew
 
-Pick your pilot on the main menu or in the workshop. The pilot appears on EVA as a bird in a glass helmet and
+You start with Abbas, Cookie and Lightning; eleven more birds are stranded on other worlds and join when
+rescued. Every bird talks on the radio (with its own personality and chirp) when things happen. Pick your
+pilot on the main menu or in the workshop. The pilot appears on EVA as a bird in a glass helmet and
 life-support pack (in their own colours), shows in the flight HUD, and brings one perk that changes the game's numbers.
 
 | Bird | Species | Role | Perk |
@@ -108,6 +132,12 @@ life-support pack (in their own colours), shows in the flight HUD, and brings on
 | Silver | Lovebird | Explorer | Triple science for discovering new locations |
 | Aziz | Indian ringneck | Pilot | Jumps 60% higher on EVA |
 | Lemon | Rainbow lorikeet | Quartermaster | Launches cost 15% less |
+| Mango | Peach-faced lovebird | Navigator | +10% science, double discovery science |
+| Coco | Rainbow lorikeet | Adventurer | Walks and drives 20% faster |
+| Mercury | Young cockatiel | Cadet | Jumps 30% higher, walks 15% faster |
+| Orange | Canary | Radio operator | Mission rewards pay 20% more funds |
+| Jafar | Zebra finch | Cook | 30% more Space Seeds from caches |
+| Snowflake | White cockatiel | Systems engineer | +40% battery, 30% faster repairs |
 
 The crew lives in `src/crew/crew.js`: add a bird by adding an entry with its colours and perk.
 
@@ -161,7 +191,8 @@ src/
   physics/     constants, Kepler solver, orbital elements
   world/       system data, star-system state, noise, procedural terrain & biomes
   spacecraft/  part catalogue, designs & Δv maths, the Craft simulation (integrator, staging, systems)
-  crew/        the bird astronaut roster: colours, roles and perks
+  crew/        the bird astronaut roster (colours, roles, perks) and radio chatter
+  explore/     seed caches, ruins and stranded birds; upgrades
   surface/     astronaut and rover movement on a body's surface
   colony/      colony life-support and construction
   events/      dynamic event system
@@ -187,7 +218,9 @@ tests/         physics unit checks and browser tours
 - **Terrain texture generation** runs on the main thread in small time slices, so high-resolution planet
   textures fade in over a few seconds after you approach a body.
 - **Docking** is a proximity/speed check (within 150 m, under 3 m/s) rather than port-to-port alignment.
-- No audio yet.
+- Sound is limited to the birds' radio chirps.
+- **Fast travel** and **Land here** are shortcuts: fast travel uses a patched-conic Δv estimate and skips the coast instead of flying the transfer, and *Land here* starts the descent a few kilometres above the site.
+- The autopilot is tuned for the stock rockets; very unusual designs (very low thrust, no engine on the last stage) may not reach orbit or land.
 - Touch controls have been tested in phone emulation, not on every real device; very old phones may run slowly even on Low.
 
 See `LICENSES.md` for third-party libraries.

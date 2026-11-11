@@ -8,6 +8,7 @@ import { Settings } from './Settings.jsx';
 import { BodyInfo } from './Database.jsx';
 import { BirdPortrait } from './BirdPortrait.jsx';
 import { TouchControls } from './TouchControls.jsx';
+import { RadioBubble, SitePointer, AutopilotButtons, BodyActions, Upgrades } from './Explore.jsx';
 
 const K = ({ a }) => <kbd>{keyName(game.settings.keys[a])}</kbd>;
 const Row = ({ k, v, cls }) => <div className="row"><span>{k}</span><span className={cls}>{v}</span></div>;
@@ -35,6 +36,7 @@ function Controls() {
 function PauseMenu({ ui }) {
   if (ui.overlay === 'settings') return <div className="overlay"><Settings onClose={() => setUI({ overlay: 'pause' })} /></div>;
   if (ui.overlay === 'controls') return <Controls />;
+  if (ui.overlay === 'upgrades') return <Upgrades onClose={() => setUI({ overlay: 'pause' })} />;
   return (
     <div className="overlay">
       <div className="panel dialog">
@@ -45,6 +47,7 @@ function PauseMenu({ ui }) {
           <button onClick={() => game.revert()}>Revert to launch</button>
           {ui.touch && <button onClick={() => game.fullscreen()}>Full screen</button>}
           {!ui.touch && <button onClick={() => setUI({ overlay: 'controls' })}>Controls</button>}
+          <button onClick={() => setUI({ overlay: 'upgrades' })}>Upgrades (🌰 {game.progress.seeds})</button>
           <button onClick={() => setUI({ overlay: 'settings' })}>Settings</button>
           <button onClick={() => game.enterWorkshop()}>Spacecraft Workshop</button>
           <button onClick={() => game.toMenu()}>Save and exit to main menu</button>
@@ -65,7 +68,7 @@ function MapInfo({ id }) {
   return (
     <div className="panel mapinfo">
       <div className="h"><span>{b.name}</span><span className="click" style={{ cursor: 'pointer' }} onClick={() => setUI({ selected: null })}>✕</span></div>
-      <div className="pad scroll" style={{ maxHeight: '60vh' }}><BodyInfo b={b} compact /></div>
+      <div className="pad scroll" style={{ maxHeight: '60vh' }}><BodyActions b={b} /><BodyInfo b={b} compact /></div>
       <div className="pad" style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
         <button className="primary" onClick={() => game.setTarget(b.id)}>Set as target</button>
         <button onClick={() => game.focusMap(b.id)}>Focus view</button>
@@ -94,6 +97,7 @@ export function Hud({ ui }) {
           <button className="small" onClick={() => game.setWarp(game.warpIdx + 1)}>▶</button>
           <button className="small" onClick={() => game.togglePause()}>Pause</button>
         </div>
+        <div><span className="k">Seeds</span><span className="v amber">🌰 {p.seeds}</span></div>
         <div className="camcell"><span className="k">Camera</span><span className="v" style={{ fontSize: 12 }}>{h.cam}</span></div>
         {compact && <div className="infocell"><button className={`small ${ui.drawer ? 'on' : ''}`} onClick={() => setUI({ drawer: !ui.drawer })}>Info</button></div>}
       </div>
@@ -298,8 +302,9 @@ export function Hud({ ui }) {
             </>
           ) : (
             <>
-              {!touch && <><button className="primary" onClick={() => game.stage()}>Stage<K a="stage" /></button>
-              <span className="sep" /></>}
+              <AutopilotButtons h={h} />
+              {!touch && <button className="primary" onClick={() => game.stage()}>Stage<K a="stage" /></button>}
+              <span className="sep" />
               <button className={h.sas ? 'on' : ''} onClick={() => game.toggle('sas')}>SAS<K a="sas" /></button>
               {[['stab', 'Hold', 'sasStab'], ['pro', 'Prograde', 'sasPro'], ['retro', 'Retro', 'sasRetro'], ['up', 'Radial', 'sasUp']].map(([m, l, a]) => (
                 <button key={m} className={`small ${h.sas && h.sasMode === m ? 'on' : ''}`} onClick={() => game.setSas(m)}>{l}<K a={a} /></button>
@@ -329,6 +334,8 @@ export function Hud({ ui }) {
         )}
       </div>}
       {touch && !sheet && !ui.paused && <TouchControls h={h} />}
+      {!sheet && !ui.drawer && <RadioBubble radio={ui.radio} />}
+      {!sheet && !ui.map && <SitePointer site={h.find} />}
       {ui.portrait && !ui.portraitOk && !sheet && (
         <div className="panel rotatetip">Turn your phone sideways for the best view <span className="click" onClick={() => setUI({ portraitOk: true })}>✕</span></div>
       )}

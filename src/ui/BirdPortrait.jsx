@@ -1,5 +1,7 @@
 import React from 'react';
 import { hex, CREW } from '../crew/crew.js';
+import { game } from '../game/Game.js';
+import { rescueHint } from './Explore.jsx';
 
 // Head-and-shoulders portrait of a bird astronaut in its helmet, drawn from the same colours
 // as the 3D model. Facing right.
@@ -53,20 +55,28 @@ export function BirdPortrait({ bird, size = 56, selected = false }) {
 
 // Row of selectable crew portraits plus the selected bird's role and perk.
 export function CrewPicker({ pilotId, onPick, size = 48, compact = false }) {
+  const [peek, setPeek] = React.useState(null);
+  const crew = (game.progress && game.progress.crew) || [];
   const sel = CREW.find((b) => b.id === pilotId) || CREW[0];
+  const show = peek ? CREW.find((b) => b.id === peek) : sel, locked = !crew.includes(show.id);
   return (
     <div className={`crewpick ${compact ? 'compact' : ''}`}>
       <div className="crewrow">
-        {CREW.map((b) => (
-          <button key={b.id} className={`crewbtn ${b.id === sel.id ? 'on' : ''}`} title={`${b.name} — ${b.role}`} aria-pressed={b.id === sel.id} onClick={() => onPick(b.id)}>
-            <BirdPortrait bird={b} size={size} selected={b.id === sel.id} />
-            {!compact && <span>{b.name}</span>}
-          </button>
-        ))}
+        {CREW.map((b) => {
+          const lock = !crew.includes(b.id);
+          return (
+            <button key={b.id} className={`crewbtn ${b.id === sel.id ? 'on' : ''} ${lock ? 'locked' : ''}`} title={lock ? `${b.name} — not rescued yet` : `${b.name} — ${b.role}`}
+              aria-pressed={b.id === sel.id} onClick={() => { if (lock) setPeek(b.id); else { setPeek(null); onPick(b.id); } }}>
+              <span className="pwrap"><BirdPortrait bird={b} size={size} selected={b.id === sel.id} />{lock && <i>?</i>}</span>
+              {!compact && <span>{b.name}</span>}
+            </button>
+          );
+        })}
       </div>
       <div className="crewinfo">
-        <b>{sel.name}</b> <span className="dim">· {sel.species} · {sel.role}</span>
-        <div>{sel.perk}</div>
+        <b>{show.name}</b> <span className="dim">· {show.species} · {show.role}{locked ? ' · LOCKED' : ''}</span>
+        <div>{locked ? `${rescueHint(show.id)}. Perk: ${show.perk}` : show.perk}</div>
+        <div className="dim" style={{ fontSize: 10, marginTop: 2 }}>Crew {crew.length}/{CREW.length} — rescue lost birds to unlock them</div>
       </div>
     </div>
   );
