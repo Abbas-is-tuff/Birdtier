@@ -50,8 +50,8 @@ export function Database() {
   const b = game.system.byId[id];
   useEffect(() => { game.menuBody = b; game.rig.startBlend(); game.rig.dist.orbital = b.type === 'station' ? 4 : 3.2; return () => { game.menuBody = game.system.home; }; }, [b]);
   return (
-    <div className="screen">
-      <div className="col" style={{ width: 250 }}>
+    <div className="screen dbscreen">
+      <div className="col dblist" style={{ width: 250 }}>
         <div className="panel col" style={{ minHeight: 0 }}>
           <div className="h"><span>Planetary database</span></div>
           <div className="scroll">
@@ -65,7 +65,7 @@ export function Database() {
         <button onClick={() => setUI({ screen: 'menu' })}>Back to main menu</button>
       </div>
       <div style={{ flex: 1 }} />
-      <div className="col" style={{ width: 400 }}>
+      <div className="col dbinfo" style={{ width: 400 }}>
         <div className="panel col" style={{ minHeight: 0 }}>
           <div className="h"><span>{b.name}</span><span>{TYPE[b.type]}</span></div>
           <div className="pad scroll"><BodyInfo b={b} /></div>

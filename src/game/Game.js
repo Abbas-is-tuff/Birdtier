@@ -21,10 +21,10 @@ import { SurfaceEntity } from '../surface/SurfaceEntity.js';
 import { Colony, MODULES, RESUPPLY } from '../colony/Colony.js';
 import { EventSystem } from '../events/events.js';
 import { MISSIONS, newProgress, activeMissions } from '../missions/missions.js';
-import { QUALITY, loadSettings, saveSettings, store } from './settings.js';
+import { QUALITY, loadSettings, saveSettings, store, touchEnabled } from './settings.js';
 import { Input } from './input.js';
 import { crewById, mod } from '../crew/crew.js';
-import { setUI, getUI } from '../ui/store.js';
+import { setUI, getUI, updateLayout } from '../ui/store.js';
 
 export const WARPS = [1, 2, 5, 10, 100, 1000, 10000, 100000];
 const Y = new THREE.Vector3(0, 1, 0);
@@ -84,6 +84,8 @@ class Game {
     scene.add(this.roverMesh);
     this.menuBody = sys.home;
     this.input = new Input(this.settings.keys, canvas);
+    updateLayout(touchEnabled(this.settings));
+    window.addEventListener('resize', () => updateLayout(touchEnabled(this.settings)));
     this.bindInput();
     this.progress = { ...newProgress(), ...(store.get('progress', null) || {}) };
     this.astroAnim = 0; this.buildAstroMesh();
@@ -169,6 +171,15 @@ class Game {
     if (this.astroMesh) this.r.scene.remove(this.astroMesh);
     this.astroMesh = buildAstronaut(this.pilot.look); this.astroMesh.visible = vis;
     this.r.scene.add(this.astroMesh);
+  }
+  // Full screen (and landscape lock where the browser allows it), from a tap.
+  fullscreen() {
+    const d = document, el = d.documentElement;
+    if (d.fullscreenElement || d.webkitFullscreenElement) { (d.exitFullscreen || d.webkitExitFullscreen).call(d); return; }
+    const req = el.requestFullscreen || el.webkitRequestFullscreen;
+    if (!req) { this.toast('This browser does not allow full screen here. Add the page to your home screen instead.', 'warn'); return; }
+    Promise.resolve(req.call(el)).then(() => { try { screen.orientation.lock('landscape').catch(() => {}); } catch { /* not supported */ } })
+      .catch(() => this.toast('Full screen was refused by the browser', 'warn'));
   }
   launchCost(stats) { return Math.round(stats.cost * mod(this.pilot, 'launch')); }
 
@@ -295,6 +306,7 @@ class Game {
   applySettings(s) {
     this.settings = s; saveSettings(s);
     this.input.keys = s.keys;
+    updateLayout(touchEnabled(s));
     const q = QUALITY[s.quality];
     if (q !== this.q) {
       this.q = q; this.r.applyQuality(q);

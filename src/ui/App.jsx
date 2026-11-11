@@ -40,11 +40,13 @@ function MainMenu({ ui }) {
       </nav>
       <div className="menucrew">
         <div className="label">Choose your astronaut</div>
-        <CrewPicker pilotId={(p && p.pilot) || 'abbas'} onPick={(id) => game.setPilot(id)} size={40} />
+        <CrewPicker pilotId={(p && p.pilot) || 'abbas'} onPick={(id) => game.setPilot(id)} size={ui.compact ? 34 : 40} />
       </div>
       <div className="foot">
         {p && p.launches > 0 && <div className="mono">Career: {p.funds.toLocaleString()} funds · {p.science} science · {p.done.length} missions complete</div>}
-        <div>Desktop browser, keyboard and mouse. Everything you see is generated procedurally on your machine.</div>
+        {ui.touch
+          ? <div>Touch controls: joystick to steer, slider for throttle, drag to look, pinch to zoom. Best played sideways. <span className="click amber" onClick={() => game.fullscreen()}>Full screen</span></div>
+          : <div>Keyboard and mouse, or a touch screen. Everything you see is generated procedurally on your machine.</div>}
       </div>
     </div>
   );

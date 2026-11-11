@@ -7,6 +7,7 @@ import { ColonyPanel } from './ColonyPanel.jsx';
 import { Settings } from './Settings.jsx';
 import { BodyInfo } from './Database.jsx';
 import { BirdPortrait } from './BirdPortrait.jsx';
+import { TouchControls } from './TouchControls.jsx';
 
 const K = ({ a }) => <kbd>{keyName(game.settings.keys[a])}</kbd>;
 const Row = ({ k, v, cls }) => <div className="row"><span>{k}</span><span className={cls}>{v}</span></div>;
@@ -42,7 +43,8 @@ function PauseMenu({ ui }) {
           <button className="primary" onClick={() => game.togglePause()}>Resume</button>
           <button onClick={() => { game.persist(); game.toast('Career saved', 'good'); }}>Save now</button>
           <button onClick={() => game.revert()}>Revert to launch</button>
-          <button onClick={() => setUI({ overlay: 'controls' })}>Controls</button>
+          {ui.touch && <button onClick={() => game.fullscreen()}>Full screen</button>}
+          {!ui.touch && <button onClick={() => setUI({ overlay: 'controls' })}>Controls</button>}
           <button onClick={() => setUI({ overlay: 'settings' })}>Settings</button>
           <button onClick={() => game.enterWorkshop()}>Spacecraft Workshop</button>
           <button onClick={() => game.toMenu()}>Save and exit to main menu</button>
@@ -78,8 +80,11 @@ export function Hud({ ui }) {
   if (!h) return null;
   const eva = h.eva;
   const lowAlt = h.radar !== null && h.radar < 50000;
+  const compact = ui.compact, touch = ui.touch;
+  // On small screens the colony panel and map info open as full sheets that hide the flight controls.
+  const sheet = compact && (ui.panel === 'colony' || (ui.map && ui.selected));
   return (
-    <div className="hud">
+    <div className={`hud ${compact ? 'compact' : ''}`}>
       <div className="panel topbar">
         <div><span className="k">Mission time</span><span className="v">T+ {fmtTime(h.met)}</span></div>
         <div><span className="k">{h.body}</span><span className="v" style={{ fontSize: 12 }}>{h.situation}</span></div>
@@ -89,7 +94,8 @@ export function Hud({ ui }) {
           <button className="small" onClick={() => game.setWarp(game.warpIdx + 1)}>▶</button>
           <button className="small" onClick={() => game.togglePause()}>Pause</button>
         </div>
-        <div><span className="k">Camera</span><span className="v" style={{ fontSize: 12 }}>{h.cam}</span></div>
+        <div className="camcell"><span className="k">Camera</span><span className="v" style={{ fontSize: 12 }}>{h.cam}</span></div>
+        {compact && <div className="infocell"><button className={`small ${ui.drawer ? 'on' : ''}`} onClick={() => setUI({ drawer: !ui.drawer })}>Info</button></div>}
       </div>
 
       <div className="alerts">
@@ -102,7 +108,7 @@ export function Hud({ ui }) {
         {h.pending > 0 && <span className="alert" style={{ color: 'var(--label)' }}>{h.pending} transmission{h.pending > 1 ? 's' : ''} in transit</span>}
       </div>
 
-      <div className="left">
+      {!compact && <div className="left">
         <div className="panel pilotbadge">
           <BirdPortrait bird={game.pilot} size={34} />
           <div><div className="k">{h.eva ? 'On EVA' : 'Pilot'} · {game.pilot.role}</div><b>{game.pilot.name}</b></div>
@@ -140,9 +146,8 @@ export function Hud({ ui }) {
           {h.missions.length === 0 && <div className="pad dim">All missions complete.</div>}
           {h.missions.slice(0, 3).map((m) => <div className="mission" key={m.id}><b>{m.title}</b><span>{m.text}</span></div>)}
         </div>
-      </div>
-
-      <div className="right">
+      </div>}
+      {!compact && <div className="right">
         <div className="panel">
           <div className="h"><span>Vessel</span><span>Stage {h.stages - h.stage > 0 && h.ignited ? h.stage + 1 : '—'} of {h.stages}</span></div>
           <div className="pad">
@@ -173,14 +178,118 @@ export function Hud({ ui }) {
               {eva.roverDist !== null && <Row k="TO ROVER" v={fmtDist(eva.roverDist)} />}
             </div></div>
         )}
-      </div>
+      </div>}
+
+      {compact && !sheet && (
+        <>
+          <div className="panel mini minil">
+            <div className="minibadge"><BirdPortrait bird={game.pilot} size={26} /><b>{game.pilot.name}</b></div>
+            <Row k="ALT" v={fmtDist(h.alt)} />
+            {lowAlt && !eva && <Row k="RADAR" v={fmtDist(h.radar)} cls={h.radar < 500 && !h.landed ? 'amber' : ''} />}
+            <Row k="SPEED" v={fmtSpeed(h.speed)} />
+            <Row k="V.SPD" v={fmtSpeed(h.vs)} cls={h.vs < -h.radar / 8 && lowAlt && !h.landed ? 'bad' : ''} />
+            {!eva && <><Row k="AP" v={fmtDist(h.ap)} /><Row k="PE" v={fmtDist(h.pe)} cls={h.pe < 0 ? 'dim' : 'good'} /></>}
+          </div>
+          <div className="panel mini minir">
+            {eva ? <>
+              <Row k={eva.kind === 'rover' ? 'ROVER' : 'EVA'} v={eva.biome} />
+              <Row k="TO VESSEL" v={fmtDist(eva.dist)} />
+              {eva.kind === 'rover' && <><Row k="CHARGE" v={`${eva.ec.toFixed(0)}`} /><Bar v={eva.ec} max={eva.ecCap} cls="ec" /></>}
+            </> : <>
+              <Row k="FUEL" v={`${fmtNum(h.fuel + (h.solid || 0))} kg`} /><Bar v={h.fuel + (h.solid || 0)} max={h.fuelCap + (h.solidCap || 0)} cls="fuel" />
+              <Row k="CHARGE" v={`${h.ec.toFixed(0)}`} /><Bar v={h.ec} max={h.ecCap} cls="ec" />
+              <Row k="STAGE Δv" v={`${fmtNum(h.dv)} m/s`} />
+              <Row k="TWR" v={h.twr.toFixed(2)} />
+            </>}
+          </div>
+        </>
+      )}
+      {compact && ui.drawer && (
+        <div className="panel drawer">
+          <div className="h"><span>Flight info</span><span className="click" onClick={() => setUI({ drawer: false })}>✕ Close</span></div>
+          <div className="scroll drawerbody">
+            <div>
+              <div className="panel pilotbadge">
+          <BirdPortrait bird={game.pilot} size={34} />
+          <div><div className="k">{h.eva ? 'On EVA' : 'Pilot'} · {game.pilot.role}</div><b>{game.pilot.name}</b></div>
+        </div>
+        <div className="panel">
+          <div className="h"><span>Flight data</span><span>{h.speedMode}</span></div>
+          <div className="pad">
+            <Row k="ALTITUDE" v={fmtDist(h.alt)} />
+            <Row k="RADAR ALT" v={lowAlt ? fmtDist(h.radar) : '—'} cls={lowAlt && h.radar < 500 && !h.landed ? 'amber' : ''} />
+            <Row k="VELOCITY" v={fmtSpeed(h.speed)} />
+            <Row k="VERTICAL SPD" v={fmtSpeed(h.vs)} cls={h.vs < -h.radar / 8 && lowAlt && !h.landed ? 'bad' : ''} />
+            <Row k="HORIZONTAL SPD" v={fmtSpeed(h.hs)} />
+            <Row k="HEADING / PITCH" v={`${h.hdg.toFixed(0)}° / ${h.pitch.toFixed(0)}°`} />
+          </div>
+          <div className="h"><span>Orbit · {h.body}</span></div>
+          <div className="pad">
+            <Row k="APOAPSIS" v={fmtDist(h.ap)} />
+            <Row k="PERIAPSIS" v={fmtDist(h.pe)} cls={h.pe < 0 ? 'dim' : 'good'} />
+            <Row k="PERIOD" v={fmtTime(h.period)} />
+            <Row k="INCLINATION" v={`${h.inc.toFixed(1)}°`} />
+            <Row k="ECCENTRICITY" v={h.ecc.toFixed(4)} />
+            <Row k="CIRCULAR / ESCAPE" v={`${h.vCirc.toFixed(0)} / ${h.vEsc.toFixed(0)} m/s`} />
+          </div>
+          <div className="h"><span>Environment</span></div>
+          <div className="pad">
+            <Row k="PRESSURE" v={fmtPressure(h.pressure)} />
+            <Row k="TEMPERATURE" v={`${(h.tempK - 273.15).toFixed(0)} °C`} />
+            <Row k="DYNAMIC PRESSURE" v={`${(h.q / 1000).toFixed(1)} kPa`} />
+            <Row k="ACCELERATION" v={`${h.g.toFixed(2)} g`} />
+            <Row k="SUNLIGHT" v={`${Math.round(h.sunVis * 100)}%`} />
+          </div>
+        </div>
+        <div className="panel">
+          <div className="h"><span>Missions {h.missionsDone}/{h.missionsTotal}</span><span className="mono">{fmtNum(p.funds)} ƒ · {p.science} sci</span></div>
+          {h.missions.length === 0 && <div className="pad dim">All missions complete.</div>}
+          {h.missions.slice(0, 3).map((m) => <div className="mission" key={m.id}><b>{m.title}</b><span>{m.text}</span></div>)}
+        </div>
+            </div>
+            <div>
+        <div className="panel">
+          <div className="h"><span>Vessel</span><span>Stage {h.stages - h.stage > 0 && h.ignited ? h.stage + 1 : '—'} of {h.stages}</span></div>
+          <div className="pad">
+            <Row k="LIQUID FUEL" v={`${fmtNum(h.fuel)} kg`} /><Bar v={h.fuel} max={h.fuelCap} cls="fuel" />
+            {h.solidCap > 0 && <><Row k="SOLID FUEL" v={`${fmtNum(h.solid)} kg`} /><Bar v={h.solid} max={h.solidCap} cls="fuel" /></>}
+            <Row k="ELECTRIC CHARGE" v={`${h.ec.toFixed(0)} / ${h.ecCap}${h.gen > 0 ? ` (+${h.gen.toFixed(1)}/s)` : ''}`} /><Bar v={h.ec} max={h.ecCap} cls="ec" />
+            {h.monoCap > 0 && <><Row k="MONOPROPELLANT" v={`${h.mono.toFixed(0)} kg`} /><Bar v={h.mono} max={h.monoCap} cls="mono" /></>}
+            {h.cargoCap > 0 && <Row k="CARGO (MATERIALS)" v={`${fmtNum(h.cargo)} / ${h.cargoCap} kg`} />}
+            <Row k="MASS" v={`${fmtNum(h.mass)} kg`} />
+            <Row k="THRUST / TWR" v={`${(h.thrust / 1000).toFixed(0)} kN / ${h.twr.toFixed(2)}`} />
+            <Row k="STAGE Δv" v={`${fmtNum(h.dv)} m/s`} />
+            {h.hasChute && <Row k="PARACHUTE" v={h.chute} />}
+          </div>
+        </div>
+        {h.target && (
+          <div className="panel"><div className="h"><span>Target · {h.target.name}</span><span className="click" style={{ cursor: 'pointer' }} onClick={() => game.setTarget(null)}>✕</span></div>
+            <div className="pad"><Row k="DISTANCE" v={fmtDist(h.target.dist)} /><Row k="RELATIVE SPEED" v={fmtSpeed(h.target.rel)} /></div></div>
+        )}
+        {h.station && (
+          <div className="panel"><div className="h"><span>{h.station.name}</span></div>
+            <div className="pad"><Row k="RANGE" v={fmtDist(h.station.dist)} /><Row k="CLOSING SPEED" v={fmtSpeed(h.station.rel)} cls={h.station.rel > 3 ? 'bad' : 'good'} />
+              <div className="dim" style={{ fontSize: 11, marginTop: 4 }}>Within 150 m and under 3 m/s, press <K a="interact" /> to dock.</div></div></div>
+        )}
+        {eva && (
+          <div className="panel"><div className="h"><span>{eva.kind === 'rover' ? 'Rover' : 'EVA'}</span><span>{eva.biome}</span></div>
+            <div className="pad"><Row k="TO VESSEL" v={fmtDist(eva.dist)} /><Row k="SPEED" v={fmtSpeed(eva.speed)} />
+              {eva.kind === 'rover' && <><Row k="ROVER CHARGE" v={`${eva.ec.toFixed(0)} / ${eva.ecCap}`} /><Bar v={eva.ec} max={eva.ecCap} cls="ec" /></>}
+              {eva.roverDist !== null && <Row k="TO ROVER" v={fmtDist(eva.roverDist)} />}
+            </div></div>
+        )}
+            </div>
+          </div>
+        </div>
+      )}
 
       {ui.map && ui.selected && <MapInfo id={ui.selected} />}
       {ui.panel === 'colony' && <ColonyPanel h={h} />}
-      {ui.map && !ui.selected && <div className="hint">System map — click a label to inspect a body, set it as target or centre the view on it. Drag to rotate, wheel to zoom.</div>}
+      {ui.map && !ui.selected && <div className="hint">{touch ? 'System map — tap a label to inspect a body or set a target. Drag to rotate, pinch to zoom.' : 'System map — click a label to inspect a body, set it as target or centre the view on it. Drag to rotate, wheel to zoom.'}</div>}
+      {sheet && <button className="sheetclose" onClick={() => setUI(ui.panel === 'colony' ? { panel: null } : { selected: null })}>✕ Close</button>}
 
-      <div className="bottom">
-        <div className="panel controls">
+      {!sheet && <div className="bottom">
+        <div className={`panel controls ${compact ? 'row1' : ''}`}>
           {eva ? (
             <>
               <button onClick={() => game.interact()}>{eva.kind === 'rover' ? 'Leave rover' : eva.roverDist !== null && eva.roverDist < 6 ? 'Drive rover' : 'Board vessel'}<K a="interact" /></button>
@@ -189,8 +298,8 @@ export function Hud({ ui }) {
             </>
           ) : (
             <>
-              <button className="primary" onClick={() => game.stage()}>Stage<K a="stage" /></button>
-              <span className="sep" />
+              {!touch && <><button className="primary" onClick={() => game.stage()}>Stage<K a="stage" /></button>
+              <span className="sep" /></>}
               <button className={h.sas ? 'on' : ''} onClick={() => game.toggle('sas')}>SAS<K a="sas" /></button>
               {[['stab', 'Hold', 'sasStab'], ['pro', 'Prograde', 'sasPro'], ['retro', 'Retro', 'sasRetro'], ['up', 'Radial', 'sasUp']].map(([m, l, a]) => (
                 <button key={m} className={`small ${h.sas && h.sasMode === m ? 'on' : ''}`} onClick={() => game.setSas(m)}>{l}<K a={a} /></button>
@@ -210,7 +319,7 @@ export function Hud({ ui }) {
           <button className={ui.map ? 'on' : ''} onClick={() => game.toggleMap()}>Map<K a="map" /></button>
           <button onClick={() => game.cycleCamera()}>Camera<K a="camera" /></button>
         </div>
-        {!eva && (
+        {!eva && !touch && (
           <div className="panel throttle">
             <span className="dim" style={{ fontSize: 10, letterSpacing: '.12em' }}>THROTTLE</span>
             <input type="range" min="0" max="100" value={Math.round(h.throttle * 100)} onChange={(e) => game.setThrottle(e.target.value / 100)} />
@@ -218,9 +327,13 @@ export function Hud({ ui }) {
             <K a="throttleUp" /><K a="throttleDown" /><K a="throttleMax" /><K a="throttleCut" />
           </div>
         )}
-      </div>
+      </div>}
+      {touch && !sheet && !ui.paused && <TouchControls h={h} />}
+      {ui.portrait && !ui.portraitOk && !sheet && (
+        <div className="panel rotatetip">Turn your phone sideways for the best view <span className="click" onClick={() => setUI({ portraitOk: true })}>✕</span></div>
+      )}
 
-      <div className="toasts">{ui.toasts.map((t) => <div key={t.id} className={`toast ${t.kind}`}>{t.msg}</div>)}</div>
+      <div className="toasts">{(compact ? ui.toasts.slice(-2) : ui.toasts).map((t) => <div key={t.id} className={`toast ${t.kind}`}>{t.msg}</div>)}</div>
 
       {ui.paused && !ui.lost && <PauseMenu ui={ui} />}
       {ui.lost && (

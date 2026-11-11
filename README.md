@@ -1,12 +1,12 @@
 # Birdtier — Beyond the Solar System
 
-**Play it:** https://abbas-is-tuff.github.io/Birdtier/ (desktop browser, keyboard and mouse)
+**Play it:** https://abbas-is-tuff.github.io/Birdtier/ (desktop with keyboard and mouse, or a phone/tablet with touch controls)
 
 A browser-based space exploration simulator flown by a crew of bird astronauts set in the **Kaelis system**, an original fictional star system.
 You design rockets, fly them under real Newtonian physics, land on other worlds, walk and drive on their surfaces,
 collect science and build colonies that have to keep their crews alive.
 
-Runs in any modern desktop browser with WebGL2 (Chrome, Edge, Firefox, Safari 17+). Keyboard and mouse.
+Runs in any modern browser with WebGL2 (Chrome, Edge, Firefox, Safari 17+), on desktop or on phones and tablets.
 
 ---
 
@@ -38,6 +38,7 @@ Other scripts:
 | `npm test` | Headless physics checks (orbit stability, Kepler accuracy, a scripted launch to orbit) |
 | `python3 tests/tour.py ascent orbit miro colony screens` | Optional end-to-end browser tour (needs Python Playwright + Chrome, dev server running) |
 | `python3 tests/systems.py` | Forces each random event and drives the rover, reporting console errors |
+| `python3 tests/mobile.py` | Phone emulation (touch, landscape and portrait): throttle, staging, joystick, EVA, sheets, workshop |
 | `python3 tests/crew.py` | Picks pilots, checks every perk changes the numbers, and screenshots each bird on EVA |
 
 Saves go to the browser's `localStorage`, so progress persists between sessions on the same browser.
@@ -53,6 +54,24 @@ Saves go to the browser's `localStorage`, so progress persists between sessions 
 5. Open the map (**M**) to see your orbit, select Miro, and plan the transfer.
 
 ---
+
+## Playing on a phone or tablet
+
+Touch controls switch on automatically on touch screens (Settings → Touch controls: Auto / On / Off), and phones
+start on Low graphics. Hold the phone sideways for the best view; portrait works too.
+
+| Control | What it does |
+|---|---|
+| Joystick (bottom left) | Steer the rocket (up/down = pitch, left/right = yaw); walk on EVA; drive the rover |
+| Roll ⟲ / ⟳ | Roll the rocket |
+| Turn / Slide | With RCS on, switches the joystick to sliding the craft (for docking) |
+| Throttle slider, Max, Cut | Engine throttle |
+| Stage / Jump | Fire the next stage; jump on EVA |
+| Drag the screen / pinch | Look around / zoom |
+| Action row (bottom) | SAS modes, RCS, gear, solar, science, EVA, colony, map, camera (scrolls sideways) |
+| Info (top bar) | Full flight, orbit, environment, vessel and mission data |
+
+Full screen is in the main menu and the pause menu (Android browsers; on iPhone, use Share → Add to Home Screen).
 
 ## Controls (all rebindable in Settings)
 
@@ -167,5 +186,6 @@ tests/         physics unit checks and browser tours
   textures fade in over a few seconds after you approach a body.
 - **Docking** is a proximity/speed check (within 150 m, under 3 m/s) rather than port-to-port alignment.
 - No audio yet.
+- Touch controls have been tested in phone emulation, not on every real device; very old phones may run slowly even on Low.
 
 See `LICENSES.md` for third-party libraries.

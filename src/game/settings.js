@@ -58,9 +58,19 @@ export const store = {
   remove(key) { try { localStorage.removeItem('frontier.' + key); } catch { /* storage unavailable */ } },
 };
 
+// Phones and tablets: a coarse primary pointer, or touch points with no hover.
+export const IS_TOUCH = typeof window !== 'undefined' && !!window.matchMedia &&
+  (window.matchMedia('(pointer: coarse)').matches || (navigator.maxTouchPoints > 0 && window.matchMedia('(hover: none)').matches));
+export const TOUCH_MODES = { auto: 'Auto', on: 'On', off: 'Off' };
+export const touchEnabled = (s) => s.touch === 'on' || (s.touch !== 'off' && IS_TOUCH);
+
 export function loadSettings() {
   const s = store.get('settings', {});
-  return { quality: QUALITY[s.quality] ? s.quality : 'medium', keys: { ...defaultKeys(), ...(s.keys || {}) } };
+  return {
+    quality: QUALITY[s.quality] ? s.quality : IS_TOUCH ? 'low' : 'medium', // phones start on Low
+    keys: { ...defaultKeys(), ...(s.keys || {}) },
+    touch: TOUCH_MODES[s.touch] ? s.touch : 'auto',
+  };
 }
 export function saveSettings(s) { store.set('settings', s); }
 

@@ -1,9 +1,9 @@
 import React, { useState } from 'react';
 import { game } from '../game/Game.js';
-import { QUALITY, ACTIONS, defaultKeys, keyName } from '../game/settings.js';
+import { QUALITY, ACTIONS, defaultKeys, keyName, TOUCH_MODES, IS_TOUCH } from '../game/settings.js';
 
 export function Settings({ onClose }) {
-  const [s, setS] = useState(() => ({ quality: game.settings.quality, keys: { ...game.settings.keys } }));
+  const [s, setS] = useState(() => ({ quality: game.settings.quality, keys: { ...game.settings.keys }, touch: game.settings.touch || 'auto' }));
   const [capturing, setCapturing] = useState(null);
   const apply = (next) => { setS(next); game.applySettings(next); };
   const rebind = (action) => {
@@ -31,6 +31,14 @@ export function Settings({ onClose }) {
         <div className="dim" style={{ fontSize: 11.5, lineHeight: 1.5, margin: '8px 0 14px' }}>
           Quality changes texture resolution, terrain mesh density, shadows, particle count, star count and render resolution, and applies immediately
           (anti-aliasing changes take effect after reloading the page). Renderer: WebGL2. WebGPU {gpu ? 'is available in this browser but is not used by this version' : 'is not available in this browser'}.
+        </div>
+        <div className="amber" style={{ fontSize: 11, letterSpacing: '.1em', marginBottom: 6 }}>TOUCH CONTROLS</div>
+        <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+          {Object.entries(TOUCH_MODES).map(([k, l]) => <button key={k} className={s.touch === k ? 'on' : ''} onClick={() => apply({ ...s, touch: k })}>{l}</button>)}
+        </div>
+        <div className="dim" style={{ fontSize: 11.5, lineHeight: 1.5, margin: '8px 0 14px' }}>
+          On-screen joystick, throttle and buttons. Auto turns them on for phones and tablets ({IS_TOUCH ? 'this device has a touch screen' : 'no touch screen detected'}).
+          On phones, Low quality runs smoothest.
         </div>
         <div className="amber" style={{ fontSize: 11, letterSpacing: '.1em', marginBottom: 6 }}>KEY BINDINGS — click a key, then press the new one (Esc cancels)</div>
         <div className="grid2">
