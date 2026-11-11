@@ -5,6 +5,8 @@ import { App } from './ui/App.jsx';
 import { game } from './game/Game.js';
 import { store } from './game/settings.js';
 
+const stage = (m) => { if (window.__bt) window.__bt.stage = m; };
+stage('Starting interface');
 // Anything that goes wrong is shown on screen (instead of a blank page) so it can be reported.
 let shown = false;
 function showError(title, detail) {
@@ -35,6 +37,7 @@ canvas.addEventListener('webglcontextlost', (e) => {
 
 // Show the loading screen first, then build the world once it has been painted.
 createRoot(document.getElementById('root')).render(<App />);
+stage('Starting 3D engine');
 window.frontier = game; // handy for debugging from the browser console
 requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => {
   try {

@@ -53,11 +53,16 @@ class Game {
 
   // ------------------------------------------------------------------ setup
   init(canvas, labelsEl) {
+    const stage = (m) => { if (window.__bt) window.__bt.stage = m; };
+    stage('Reading settings');
     this.settings = loadSettings();
     this.q = QUALITY[this.settings.quality];
+    stage('Building the star system');
     this.system = new StarSystem();
     const sys = this.system;
+    stage('Creating the graphics renderer (WebGL2)');
     this.r = new SceneRenderer(canvas, this.q);
+    stage('Building planets and spacecraft');
     const scene = this.r.scene;
     this.queue = new AssetQueue();
     this.starfield = new Starfield(this.q.stars); scene.add(this.starfield.group);
@@ -91,6 +96,7 @@ class Game {
     this.astroAnim = 0; this.buildAstroMesh();
     setUI({ hasSave: !!store.get('save', null), progress: { ...this.progress } });
     this.mode = 'loading';
+    stage('Generating planet surfaces 0%');
     this.last = performance.now();
     const loop = () => { requestAnimationFrame(loop); this.frame(); };
     requestAnimationFrame(loop);
@@ -568,9 +574,10 @@ class Game {
     this.queue.run(loading ? 45 : 5);
     if (loading) {
       setUI({ loading: 0.92 * this.queue.finished / Math.max(1, this.queue.total) + (this.compiled ? 0.08 : 0) });
+      if (window.__bt) window.__bt.stage = this.compiling ? 'Preparing graphics shaders' : `Generating planet surfaces ${Math.round(100 * this.queue.finished / Math.max(1, this.queue.total))}%`;
       if (!this.queue.jobs.length && !this.compiling) {
         this.compiling = true;
-        const done = () => { if (this.mode !== 'loading') return; this.compiled = true; this.mode = 'menu'; this.rig.mode = 'orbital'; setUI({ loading: 1, screen: 'menu' }); };
+        const done = () => { if (this.mode !== 'loading') return; this.compiled = true; this.mode = 'menu'; if (window.__bt) window.__bt.ready = true; this.rig.mode = 'orbital'; setUI({ loading: 1, screen: 'menu' }); };
         const r = this.r.renderer;
         try { Promise.resolve(r.compileAsync ? r.compileAsync(this.r.scene, this.r.camera) : r.compile(this.r.scene, this.r.camera)).then(done, done); } catch { done(); }
         setTimeout(done, 8000); // never wait on the compiler forever
