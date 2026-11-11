@@ -1,4 +1,4 @@
-<p align="center"><img src="public/icon.svg" width="180" alt="Birdtier logo: a mohawked lovebird pilot in a combat helmet and visor in front of a blazing sun"></p>
+<p align="center"><img src="public/bt-icon-512.png" width="180" alt="Birdtier logo: a mohawked lovebird pilot in a combat helmet and visor in front of a blazing sun"></p>
 
 # Birdtier — Beyond the Solar System
 
