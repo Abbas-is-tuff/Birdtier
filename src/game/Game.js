@@ -561,10 +561,20 @@ class Game {
   frame() {
     const now = performance.now(), dt = Math.min(0.1, (now - this.last) / 1000);
     this.last = now;
-    this.queue.run(this.mode === 'loading' ? 14 : 5);
-    if (this.mode === 'loading') {
-      setUI({ loading: this.queue.finished / Math.max(1, this.queue.total) });
-      if (!this.queue.jobs.length) { this.mode = 'menu'; this.rig.mode = 'orbital'; setUI({ screen: 'menu' }); }
+    // While loading, the 3D view is hidden behind the loading screen, so instead of drawing it every
+    // frame the time goes to generating planets; then all shaders are compiled in the background
+    // (in parallel where the browser supports it) so the menu does not stutter on its first frames.
+    const loading = this.mode === 'loading';
+    this.queue.run(loading ? 45 : 5);
+    if (loading) {
+      setUI({ loading: 0.92 * this.queue.finished / Math.max(1, this.queue.total) + (this.compiled ? 0.08 : 0) });
+      if (!this.queue.jobs.length && !this.compiling) {
+        this.compiling = true;
+        const done = () => { if (this.mode !== 'loading') return; this.compiled = true; this.mode = 'menu'; this.rig.mode = 'orbital'; setUI({ loading: 1, screen: 'menu' }); };
+        const r = this.r.renderer;
+        try { Promise.resolve(r.compileAsync ? r.compileAsync(this.r.scene, this.r.camera) : r.compile(this.r.scene, this.r.camera)).then(done, done); } catch { done(); }
+        setTimeout(done, 8000); // never wait on the compiler forever
+      }
     }
     if (this.mode === 'flight') { if (!this.paused) this.simulate(dt); }
     else {
@@ -575,7 +585,7 @@ class Game {
     }
     this.updateCamera(dt);
     this.syncScene(dt);
-    this.r.render();
+    if (!loading) this.r.render();
     this.hudClock += dt;
     if (this.hudClock > 0.1) { this.hudClock = 0; this.updateHud(); }
     this.saveClock += dt;
