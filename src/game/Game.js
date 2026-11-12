@@ -24,7 +24,7 @@ import { MISSIONS, newProgress, activeMissions } from '../missions/missions.js';
 import { QUALITY, loadSettings, saveSettings, store, touchEnabled } from './settings.js';
 import { Input } from './input.js';
 import { crewById, mod, CREW, RESCUE_AT } from '../crew/crew.js';
-import { line, squawk, unlockAudio, joke, laugh, giggle } from '../crew/chatter.js';
+import { line, squawk, unlockAudio, joke, laugh, giggle, roast, comeback, crashLine } from '../crew/chatter.js';
 import { Autopilot, transferPlan, totalDv, spendDv } from './autopilot.js';
 import { generateSites, buildSite, updateBeacons, SITE_TYPES } from '../explore/sites.js';
 import { UPGRADE_BY_ID, applyCraftUpgrades, level, nextCost } from '../explore/upgrades.js';
@@ -221,7 +221,19 @@ class Game {
   tellJoke(birdId) {
     if (this.jokeTimers) this.jokeTimers.forEach(clearTimeout);
     this.jokeTimers = [];
-    const id = birdId || this.progress.pilot, parts = joke(id);
+    const id = birdId || this.progress.pilot;
+    const mates = this.progress.crew.filter((b) => b !== id);
+    if (mates.length && Math.random() < 0.4) {
+      // roast battle: one bird roasts a crewmate, the crewmate claps back, a third bird loses it
+      const target = mates[Math.floor(Math.random() * mates.length)], r = roast(target), t1 = Math.max(3800, r.length * 62);
+      const rest = this.progress.crew.filter((b) => b !== id && b !== target), fan = rest.length ? rest[Math.floor(Math.random() * rest.length)] : id;
+      this.say(id, r, t1 + 300);
+      this.jokeTimers.push(setTimeout(() => this.say(target, comeback(target), 4200), t1));
+      this.jokeTimers.push(setTimeout(() => { this.say(fan, laugh(fan), 4000); if (this.settings.chirps !== false) giggle(fan, 0.6); }, t1 + 3600));
+      this.radioAt.idle = performance.now() + t1 + 7000; this.idleClock = 0;
+      return;
+    }
+    const parts = joke(id);
     // comic timing: time to read the setup, a beat, the punchline, then the reaction
     let t = 0, last = 0;
     parts.forEach((txt, i) => {
@@ -980,7 +992,8 @@ class Game {
     } else { for (const s of this.sciQueue) s.at += dtGame; for (const s of this.cmdQueue) s.at += dtGame; }
     if (!c.destroyed) this.completeMissions();
     if (c.destroyed && this.entity && (this.entity.kind === 'cabin' || this.entity.kind === 'spacewalk')) this.endWalk();
-    if (c.destroyed && !getUI().lost) { this.dropWarp(); this.persist(); setUI({ lost: c.destroyReason }); }
+    if (c.destroyed && !getUI().lost) {
+      this.say(this.progress.pilot, crashLine(), 9000); this.dropWarp(); this.persist(); setUI({ lost: c.destroyReason }); }
   }
 
   // Moments the pilot talks about on the radio.
@@ -993,7 +1006,7 @@ class Game {
     const low = st && st.liquid.length && st.fuelCap > 0 && st.fuel / st.fuelCap < 0.12 && c.activeStage === 0;
     if (low && !f.low) { f.low = true; this.chatter('lowFuel'); } else if (!low) f.low = false;
     this.idleClock += dtReal;
-    if (this.idleClock > 60 + Math.random() * 50 && !this.paused) { if (Math.random() < 0.5) this.tellJoke(); else this.chatter('idle'); }
+    if (this.idleClock > 40 + Math.random() * 40 && !this.paused) { if (Math.random() < 0.7) this.tellJoke(); else this.chatter('idle'); }
   }
 
   updateEnvironment() {

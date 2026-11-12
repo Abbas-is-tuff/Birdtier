@@ -366,3 +366,65 @@ export function giggle(birdId, volume = 0.5) {
     o.connect(gn).connect(ctx.destination); o.start(t); o.stop(t + 0.08);
   }
 }
+
+// ---------------------------------------------------------------- extra funny: more jokes, roasts, crash lines
+JOKES.push(
+  'I told mission control I wanted to be a pilot when I grow up.|They said “you can’t do both.”',
+  'We don’t have a toilet on this ship.|Do NOT ask what the cargo container is for.',
+  'I tried to order pizza to orbit.|The delivery guy said “30 minutes or it’s free.” It has been 4 years. I am rich in pizza.',
+  'Humans trained for 10 years to fly a rocket.|I got the job because I fit in the seat and work for seeds.',
+  'Houston, we have a problem.|Somebody pooped on the control panel. ...It was me. Problem solved. Sort of.',
+  'Why did the bird cross the galaxy?|To poop on a cleaner windshield.',
+  'The rocket costs 20,000 funds.|My salary is 9 seeds a day. I’d like to speak to whoever does the budget.',
+  'My flight instructor said “never look down.”|So I looked down. Now I need new feathers. And new pants. I don’t even WEAR pants.',
+  'What’s the scariest thing in space?|The fuel gauge. Second scariest: Salman before breakfast.',
+  'I asked the autopilot for a joke.|It crashed. Best joke it ever told.',
+  'Scientists say birds are living dinosaurs.|So technically a T-REX is flying this rocket. Buckle up.',
+  'How many birds does it take to fly a rocket?|One to fly it, thirteen to scream “WE’RE ALL GONNA DIE” for moral support.',
+  'I did a barrel roll in the rocket.|The seed bowl did not do a barrel roll. The seed bowl did a seed explosion.',
+  'They say in space no one can hear you scream.|Challenge accepted. *SQUAAAAAAWK* ...Mission control heard that. They’d like me to stop.',
+  'I’ve got good news and bad news.|Good news: we’re going really fast. Bad news: I don’t know where.',
+  'What’s the difference between this rocket and a rock?|About 3 seconds, if I touch the wrong button.',
+);
+// What crewmates say ABOUT each bird...
+const ROASTS = {
+  abbas: ['Abbas calls himself “Commander.” The only thing he commands is the snack schedule.', 'Abbas gave a 40-minute speech before launch. The rocket fell asleep.'],
+  salman: ['Salman is so grumpy, the Sun wears sunglasses to look at HIM.', 'Salman bit the rocket once. The rocket apologised.', 'Salman isn’t afraid of black holes. Black holes cross the street when they see Salman.'],
+  cookie: ['Cookie is so lazy, he got tired watching the autopilot work.', 'Cookie once fell asleep during a countdown. At “9.”', 'Cookie’s top speed is amazing. Shame it only lasts four seconds.'],
+  lightning: ['Lightning has pressed every button on this ship. Twice. We don’t have windshield wipers anymore.', 'Lightning asked “are we there yet?” 600 times. We hadn’t launched.'],
+  pikachu: ['Pikachu wrote a 90-page report on a rock. The rock was a seed. She ate the evidence.', 'Pikachu measures everything. She knows exactly how annoying that is: 84%.'],
+  silver: ['Silver “explored” the ship for an hour. He was looking for the door. He was standing in it.', 'Silver has discovered 12 planets and zero ways home.'],
+  aziz: ['Aziz says every landing is “textbook.” Yes. The textbook is called “How NOT To Land.”', 'Aziz looks in the mirror so much the mirror asked for a break.'],
+  lemon: ['Lemon counts our seeds every day. The number goes down every day. Lemon has crumbs on his beak every day. Mystery!', 'Lemon bought the cheap fuel. That’s why the rocket coughs.'],
+  mango: ['Mango is our navigator. Yesterday she got lost in the cabin. It’s ONE ROOM.', 'Mango said “turn left at the big star.” They’re ALL big stars, Mango!'],
+  coco: ['Coco bounced so hard in zero-g we found him in the fuel tank.', 'Coco has two speeds: bounce, and more bounce.'],
+  mercury: ['Mercury screamed at his own reflection in the window. Twice. Today.', 'Mercury is so new he still has the price tag on.'],
+  orange: ['Orange has sung the same song for six days. Even the vacuum of space said “please stop.”', 'Orange’s singing is why aliens haven’t contacted us.'],
+  jafar: ['Jafar packed 40 kilos of rice and zero kilos of oxygen.', 'Jafar thinks the Milky Way is a rice pudding. Nobody tell him.'],
+  snowflake: ['Snowflake is so calm, we checked twice whether she was a pillow.', 'Snowflake stayed calm during the fire. She was asleep. But still.'],
+};
+// ...and what that bird fires back.
+const COMEBACKS = {
+  abbas: ['That’s it. You’re cleaning the seed bowl. With your FACE.', 'Insulting a commander? That’s a paddlin’. I mean a pecking.'],
+  salman: ['Say that again. Closer to my beak.', 'I’m writing your name on my list. It’s a short list. It’s a BITING list.'],
+  cookie: ['I’d be offended, but that sounds like effort.', 'Wake me when your joke gets funny. So... never. Goodnight.'],
+  lightning: ['I HEARD MY NAME! ARE WE PLAYING A GAME?! I WIN!', 'What’s a “roast”? Is it food? CAN I EAT IT?'],
+  pikachu: ['Fascinating. Your joke scored 2 out of 10. I measured.', 'My data says you’re jealous. The data is never wrong.'],
+  silver: ['I wasn’t lost. The door moved.', 'Joke’s on you, I discovered that insult years ago.'],
+  aziz: ['You’re just mad because I look amazing while crashing.', 'Any landing you can waddle away from is a good landing.'],
+  lemon: ['Those crumbs are a SEPARATE issue.', 'That joke was so cheap even I wouldn’t buy it.'],
+  mango: ['I knew exactly where I was. I was... somewhere.', 'The stars told me you were going to say that. They also told me you smell.'],
+  coco: ['BOUNCE! Sorry, didn’t hear you. BOUNCE!', 'The fuel tank was FUN and I’d do it again!'],
+  mercury: ['That bird in the window started it!', 'I’m telling Abbas! ...Abbas is laughing too? Oh no.'],
+  orange: ['♪ This song is called “You Have No Taste” ♪', '♪ La la la, I can’t hear you ♪'],
+  jafar: ['You can’t breathe rice. But have you TRIED?', 'Laugh now. You’ll be begging for my rice by Tuesday.'],
+  snowflake: ['...', 'I forgive you. Peacefully. But I will remember.'],
+};
+const CRASH = [
+  'Well. That’s one way to land.', 'I meant to do that.', 'Nobody tell mission control. Act natural.', 'Good news: we found the ground!',
+  'Does the warranty cover “exploded”?', 'On the bright side, parking was easy.', 'That’s coming out of someone’s seeds. Not mine.',
+  'Okay WHO was flying? ...Oh. It was me.', 'Rapid unplanned disassembly. Very advanced manoeuvre.', 'The rocket is fine. It’s just in more pieces now.',
+];
+export const roast = (targetId) => draw('roast:' + targetId, ROASTS[targetId] || ['...I’ve got nothing. That bird is perfect.']);
+export const comeback = (targetId) => draw('cb:' + targetId, COMEBACKS[targetId] || ['Hey!']);
+export const crashLine = () => draw('crash', CRASH);

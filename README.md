@@ -131,7 +131,7 @@ Two are a short walk from the launch pad. A pointer on screen shows the nearest 
 ## The crew
 
 You start with Abbas, Cookie and Lightning; eleven more birds are stranded on other worlds and join when
-rescued. Every bird talks on the radio (with its own personality and chirp) when things happen. They also crack jokes: press **😂 Joke** (key 5), wait for one while flying, or talk to a crewmate in the cabin — another bird laughs (or groans). Pick your
+rescued. Every bird talks on the radio (with its own personality and chirp) when things happen. They also crack jokes: press **😂 Joke** (key 5), wait for one while flying, or talk to a crewmate in the cabin — another bird laughs (or groans). Sometimes it turns into a roast battle between crewmates, and the pilot always has something to say after a crash. Pick your
 pilot on the main menu or in the workshop. The pilot appears on EVA as a bird in a glass helmet and
 life-support pack (in their own colours), shows in the flight HUD, and brings one perk that changes the game's numbers.
 
