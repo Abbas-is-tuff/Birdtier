@@ -283,3 +283,9 @@ html.compact .sitepointer { top: auto; right: auto; left: calc(144px + var(--sl)
 html.compact .hud .sitepointer { display: flex; top: calc(150px + var(--st)); left: calc(4px + var(--sl)); }
 .cabinprompt { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); padding: 7px 14px; font-size: 13px; white-space: nowrap; border-color: #3d6a3f; }
 html.compact .cabinprompt { bottom: auto; top: calc(110px + var(--st)); font-size: 12px; }
+.quickgrid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 8px; }
+.quickbird, .quickbird:hover:not(:disabled), .quickbird.on { background: none; border: none; padding: 4px 0; display: flex; flex-direction: column; align-items: center; gap: 4px; font-size: 11px; text-transform: none; letter-spacing: 0.03em; color: var(--label); cursor: pointer; }
+.quickbird.on span { color: var(--amber, #e9a23b); }
+html.compact .quickgrid { grid-template-columns: repeat(7, 1fr); gap: 4px; }
+html.compact .quickbird svg { width: 42px; height: 42px; }
+html.portrait .quickgrid { grid-template-columns: repeat(4, 1fr); }

@@ -107,3 +107,31 @@ export function rescueHint(id) {
   return where ? `Lost on ${game.system.byId[where].name} — land there and follow the green beacon` : '';
 }
 export const crewCount = (p) => `${p.crew.length}/${CREW.length}`;
+
+// Quick Start: pick any bird to fly as, even ones not rescued yet (they fly as a guest).
+export function QuickPick({ onClose }) {
+  const crew = game.progress ? game.progress.crew : [];
+  const [sel, setSel] = React.useState((game.progress && game.progress.pilot) || 'abbas');
+  const b = crewById(sel);
+  return (
+    <div className="overlay" onClick={onClose}>
+      <div className="panel dialog wide" onClick={(e) => e.stopPropagation()}>
+        <div className="h"><span>Quick Start — choose your bird</span><span className="click" onClick={onClose}>✕</span></div>
+        <div className="pad quickgrid">
+          {CREW.map((c) => (
+            <button key={c.id} className={`quickbird ${c.id === sel ? 'on' : ''}`} onClick={() => setSel(c.id)} onDoubleClick={() => { onClose(); game.quickStart(c.id); }}>
+              <BirdPortrait bird={c} size={56} selected={c.id === sel} />
+              <span>{c.name}</span>
+            </button>
+          ))}
+        </div>
+        <div className="pad crewinfo">
+          <b>{b.name}</b> <span className="dim">· {b.species} · {b.role}</span>
+          <div>{b.perk}</div>
+          {!crew.includes(b.id) && <div className="dim" style={{ fontSize: 11 }}>Not rescued yet — flies as a guest in Quick Start. {rescueHint(b.id)} to add them to your crew for good.</div>}
+        </div>
+        <div className="pad"><button className="primary" onClick={() => { onClose(); game.quickStart(sel); }}>Launch as {b.name}</button></div>
+      </div>
+    </div>
+  );
+}

@@ -6,7 +6,7 @@ import { Workshop } from './Workshop.jsx';
 import { Database } from './Database.jsx';
 import { Settings } from './Settings.jsx';
 import { CrewPicker } from './BirdPortrait.jsx';
-import { Upgrades } from './Explore.jsx';
+import { Upgrades, QuickPick } from './Explore.jsx';
 import logoUrl from '../assets/icon.svg';
 
 function Loading({ p }) {
@@ -34,7 +34,7 @@ function MainMenu({ ui }) {
         </div>
       </div>
       <nav>
-        <button className="primary" onClick={() => game.quickStart()}>Quick Start <span>jump straight into orbit</span></button>
+        <button className="primary" onClick={() => setUI({ overlay: 'quickpick' })}>Quick Start <span>pick any bird, jump into orbit</span></button>
         <button onClick={() => (ui.hasSave ? setConfirm(true) : game.newCareer())}>New Mission <span>start a new career</span></button>
         {confirm && (
           <div className="confirm">
@@ -73,6 +73,7 @@ export function App() {
       {ui.screen === 'workshop' && <Workshop ui={ui} />}
       {ui.screen === 'flight' && <Hud ui={ui} />}
       {ui.screen !== 'flight' && ui.overlay === 'upgrades' && <Upgrades onClose={() => setUI({ overlay: null })} />}
+      {ui.screen !== 'flight' && ui.overlay === 'quickpick' && <QuickPick onClose={() => setUI({ overlay: null })} />}
       {ui.screen !== 'flight' && ui.toasts.length > 0 && (
         <div className="toasts" style={{ left: 'auto', right: 10 }}>{ui.toasts.map((t) => <div key={t.id} className={`toast ${t.kind}`}>{t.msg}</div>)}</div>
       )}

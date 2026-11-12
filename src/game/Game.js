@@ -173,18 +173,21 @@ class Game {
   }
 
   newCareer() {
-    this.resetWorld(); this.careerLoaded = true;
+    this.resetWorld(); this.careerLoaded = true; this.guestPilot = null;
     this.t = 0; this.system.update(0);
-    this.progress = { ...newProgress() };
+    const keep = this.progress && newProgress().crew.includes(this.progress.pilot) ? this.progress.pilot : 'abbas';
+    this.progress = { ...newProgress(), pilot: keep };
     this.events = new EventSystem(this);
     store.remove('save');
     this.launch(DEFAULT_DESIGN, true);
   }
 
   // ---- crew: the selected bird flies every mission, appears on EVA and applies its perk
-  get pilot() { return crewById(this.progress.pilot); }
+  // In Quick Start any bird can fly as a guest pilot, even one not rescued yet.
+  get pilot() { return crewById(this.guestPilot || this.progress.pilot); }
   setPilot(id) {
     const bird = crewById(id);
+    this.guestPilot = null;
     if (!this.progress.crew.includes(bird.id)) { this.toast(`${bird.name} is lost on ${this.system.byId[RESCUE_AT[bird.id]].name}. Rescue them to unlock!`, 'warn'); return; }
     this.progress.pilot = bird.id; this.buildAstroMesh();
     store.set('progress', this.progress);
@@ -202,7 +205,7 @@ class Game {
 
   // ---- bird radio chatter
   chatter(key, vars = {}, birdId = null, force = false) {
-    const id = birdId || this.progress.pilot, now = performance.now();
+    const id = birdId || this.pilot.id, now = performance.now();
     if (!force && this.radioAt[key] && now - this.radioAt[key] < (key === 'idle' ? 0 : 12000)) return;
     const text = line(id, key, { b: vars.b || (this.craft && this.craft.env.body ? this.craft.env.body.name : '') });
     if (!text) return;
@@ -221,7 +224,7 @@ class Game {
   tellJoke(birdId) {
     if (this.jokeTimers) this.jokeTimers.forEach(clearTimeout);
     this.jokeTimers = [];
-    const id = birdId || this.progress.pilot;
+    const id = birdId || this.pilot.id;
     const mates = this.progress.crew.filter((b) => b !== id);
     if (mates.length && Math.random() < 0.4) {
       // roast battle: one bird roasts a crewmate, the crewmate claps back, a third bird loses it
@@ -316,8 +319,11 @@ class Game {
     if (err) this.toast(err, 'warn'); else this.toast(`Assisted descent to the ${SITE_TYPES[site.type].label.toLowerCase()} on ${b.name}`, 'info');
   }
   // Quick start: a fresh rocket already in orbit around Thalen (the booster did the hard part).
-  quickStart() {
+  quickStart(birdId) {
     if (!this.careerLoaded) { if (!this.continueCareer()) this.newCareer(); }
+    const id = birdId || this.progress.pilot;
+    if (this.progress.crew.includes(id)) { this.progress.pilot = id; this.guestPilot = null; } else this.guestPilot = id;
+    this.buildAstroMesh(); setUI({ progress: { ...this.progress } });
     const err = this.launch(DEFAULT_DESIGN, true);
     if (err) { this.toast(err, 'warn'); return; }
     const c = this.craft;
@@ -328,7 +334,7 @@ class Game {
     this.flags.space = true;
     c.gear = false; this.toasts = []; setUI({ toasts: [] });
     this.toast('Quick start: you are in orbit around Thalen. Pick a target on the map (M) and press Travel, or Autopilot → Land.', 'good');
-    this.chatter('orbit', { b: 'Thalen' }, null, true);
+    this.chatter('pick', {}, null, true);
   }
 
   // ---- sites and upgrades
@@ -454,6 +460,7 @@ class Game {
   }
 
   continueCareer() {
+    this.guestPilot = null;
     const d = store.get('save', null);
     if (!d) return false;
     this.restore(d);
@@ -654,7 +661,7 @@ class Game {
   }
 
   // ---- inside the ship and spacewalks
-  crewAboard() { return this.progress.crew.filter((id) => id !== this.progress.pilot).slice(0, 3); }
+  crewAboard() { return this.progress.crew.filter((id) => id !== this.pilot.id).slice(0, 3); }
   toggleCabin() {
     const c = this.craft;
     if (this.mode !== 'flight' || !c || c.destroyed || this.paused) return;
@@ -993,7 +1000,7 @@ class Game {
     if (!c.destroyed) this.completeMissions();
     if (c.destroyed && this.entity && (this.entity.kind === 'cabin' || this.entity.kind === 'spacewalk')) this.endWalk();
     if (c.destroyed && !getUI().lost) {
-      this.say(this.progress.pilot, crashLine(), 9000); this.dropWarp(); this.persist(); setUI({ lost: c.destroyReason }); }
+      this.say(this.pilot.id, crashLine(), 9000); this.dropWarp(); this.persist(); setUI({ lost: c.destroyReason }); }
   }
 
   // Moments the pilot talks about on the radio.

@@ -99,7 +99,7 @@ Full screen is in the main menu and the pause menu (Android browsers; on iPhone,
 
 ## Quick and easy play
 
-- **Quick Start** (main menu): a fresh rocket already in orbit around Thalen.
+- **Quick Start** (main menu): pick any of the 14 birds (even ones not rescued yet fly as a guest) and start with a fresh rocket already in orbit around Thalen.
 - **Autopilot**: *Auto → Orbit* flies a gravity turn to a stable orbit; *Auto → Land* brakes and lands on
   the world below (on Thalen's thick air it can drop to the capsule and use the parachute). It flies the real
   physics with real fuel; touching any flight control hands control back to you.
