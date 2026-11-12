@@ -86,11 +86,11 @@ export function TouchControls({ h }) {
             {h.hasRcs && h.rcs && <button className={`tbtn ${translate ? 'on' : ''}`} onClick={() => setMode(translate ? 'rotate' : 'translate')}>{translate ? 'Slide' : 'Turn'}</button>}
           </div>
         )}
-        <Joystick mode={translate ? 'translate' : 'rotate'} label={eva ? (eva.kind === 'rover' ? 'Drive' : 'Walk') : translate ? 'RCS slide' : 'Steer'} />
+        <Joystick mode={translate ? 'translate' : 'rotate'} label={eva ? (eva.kind === 'rover' ? 'Drive' : eva.kind === 'spacewalk' ? 'Fly' : 'Walk') : translate ? 'RCS slide' : 'Steer'} />
       </div>
       <div className="tright">
         {eva
-          ? <Hold action="stage" className="big">Jump</Hold>
+          ? <>{(eva.kind === 'spacewalk' || eva.zeroG) && <Hold action="rollLeft" className="big">Down</Hold>}<Hold action="stage" className="big">{eva.kind === 'spacewalk' || eva.zeroG ? 'Up' : 'Jump'}</Hold></>
           : <>
               <Throttle value={h.throttle} />
               <button className="tbtn big primary" onClick={() => game.stage()}>Stage</button>

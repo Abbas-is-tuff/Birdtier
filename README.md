@@ -38,6 +38,7 @@ Other scripts:
 | `npm run build:single` | Builds one self-contained `dist-single/index.html` |
 | `npm run build:pages` | Rebuilds the one-file game into `docs/` for GitHub Pages (commit and push afterwards) |
 | `npm test` | Headless physics checks plus autopilot flights (pad to orbit, landings on Miro, Thalen, Ordun and Pell) |
+| `python3 tests/eva.py` | Inside the ship (zero-g and gravity), the hatch, a tethered spacewalk |
 | `python3 tests/fun.py` | Browser play-through: Quick Start, fast travel, assisted landing, bird rescue, upgrade shop |
 | `python3 tests/tour.py ascent orbit miro colony screens` | Optional end-to-end browser tour (needs Python Playwright + Chrome, dev server running) |
 | `python3 tests/systems.py` | Forces each random event and drives the rover, reporting console errors |
@@ -88,9 +89,10 @@ Full screen is in the main menu and the pause menu (Android browsers; on iPhone,
 | G | Landing gear | U | Solar arrays |
 | . / , | Time warp up / down | P or Esc | Pause |
 | M | System map | C | Next camera |
-| F | EVA / board / dock / rover | V | Collect sample (EVA) |
+| F | EVA or spacewalk / board / dock / rover / use (inside) | V | Collect sample (EVA) |
 | O | Deploy science station (EVA) | Y | Run instruments |
 | B | Colony panel | Mouse drag / wheel | Orbit / zoom camera |
+| Enter | Go inside the ship / back to the seat | Q (inside, spacewalk) | Float down |
 
 ---
 
@@ -103,6 +105,16 @@ Full screen is in the main menu and the pause menu (Android browsers; on iPhone,
 - **Fast travel**: open the map (M), pick a planet or moon, and press *Travel*. It shows the Δv the trip needs
   and what you have, spends that fuel, skips the coast and arrives in a parking orbit.
 - **Land here**: from orbit, each place to find on a world has a *Land here* button for an assisted descent next to it.
+
+## Inside the ship and spacewalks
+
+- **Go inside** (Enter): walk around the cabin — control console, windows, seats with the rest of your crew,
+  a seed bowl and the hatch. When you are coasting there is no felt gravity, so your bird floats
+  (Space up, Q down); on the ground or with the engines on, you walk on the floor. F uses things
+  (seat, window, hatch), V talks to a crewmate or eats seeds.
+- **EVA outside**: on the ground, step out and walk (F or the hatch). In space above the atmosphere with
+  the engines off, the same button starts a **spacewalk**: fly with the jet pack (W/S forward/back, A/D sideways,
+  Space up, Q down, relative to the camera) on a 40 m safety tether, then F near the ship to come back in.
 
 ## Things to find
 
@@ -218,6 +230,7 @@ tests/         physics unit checks and browser tours
 - **Terrain texture generation** runs on the main thread in small time slices, so high-resolution planet
   textures fade in over a few seconds after you approach a body.
 - **Docking** is a proximity/speed check (within 150 m, under 3 m/s) rather than port-to-port alignment.
+- Spacewalks keep you at a fixed offset from the ship's orbit (no separate orbital motion); the cabin is roomier than the outside of the capsule suggests.
 - Sound is limited to the birds' radio chirps.
 - **Fast travel** and **Land here** are shortcuts: fast travel uses a patched-conic Δv estimate and skips the coast instead of flying the transfer, and *Land here* starts the descent a few kilometres above the site.
 - The autopilot is tuned for the stock rockets; very unusual designs (very low thrust, no engine on the last stage) may not reach orbit or land.

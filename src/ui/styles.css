@@ -281,3 +281,5 @@ html.compact .radio svg { width: 34px; height: 34px; }
 html.compact .radio .said { font-size: 12px; }
 html.compact .sitepointer { top: auto; right: auto; left: calc(144px + var(--sl)); top: calc(4px + var(--st)); padding: 4px 8px; font-size: 11px; display: none; }
 html.compact .hud .sitepointer { display: flex; top: calc(150px + var(--st)); left: calc(4px + var(--sl)); }
+.cabinprompt { position: absolute; bottom: 120px; left: 50%; transform: translateX(-50%); padding: 7px 14px; font-size: 13px; white-space: nowrap; border-color: #3d6a3f; }
+html.compact .cabinprompt { bottom: auto; top: calc(110px + var(--st)); font-size: 12px; }

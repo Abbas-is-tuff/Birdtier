@@ -294,7 +294,17 @@ export function Hud({ ui }) {
 
       {!sheet && <div className="bottom">
         <div className={`panel controls ${compact ? 'row1' : ''}`}>
-          {eva ? (
+          {eva && eva.kind === 'cabin' ? (
+            <>
+              <button className={eva.prompt && !eva.nearId?.startsWith('crew') && eva.nearId !== 'bowl' ? 'primary' : ''} onClick={() => game.interact()}>{eva.prompt && !eva.nearId?.startsWith('crew') && eva.nearId !== 'bowl' ? eva.prompt : 'Use'}<K a="interact" /></button>
+              <button className={eva.nearId === 'bowl' || eva.nearId?.startsWith('crew') ? 'primary' : ''} onClick={() => game.collectSample()}>{eva.nearId === 'bowl' ? 'Eat seeds' : eva.nearId?.startsWith('crew') ? eva.prompt : 'Talk / eat'}<K a="sample" /></button>
+              <button onClick={() => game.toggleCabin()}>Back to seat<K a="cabin" /></button>
+            </>
+          ) : eva && eva.kind === 'spacewalk' ? (
+            <>
+              <button className={eva.dist < 12 ? 'primary' : ''} onClick={() => game.interact()}>Come back in ({Math.round(eva.dist)} m)<K a="interact" /></button>
+            </>
+          ) : eva ? (
             <>
               <button onClick={() => game.interact()}>{eva.kind === 'rover' ? 'Leave rover' : eva.roverDist !== null && eva.roverDist < 6 ? 'Drive rover' : 'Board vessel'}<K a="interact" /></button>
               {eva.kind === 'astronaut' && <><button onClick={() => game.collectSample()}>Collect sample<K a="sample" /></button>
@@ -314,7 +324,9 @@ export function Hud({ ui }) {
               {h.hasLegs && <button className={h.gear ? 'on' : ''} onClick={() => game.toggle('gear')}>Gear<K a="gear" /></button>}
               {h.hasSolar && <button className={h.panels ? 'on' : ''} onClick={() => game.toggle('panels')}>Solar<K a="panels" /></button>}
               {h.instruments > 0 && <button onClick={() => game.runExperiments()}>Science<K a="experiment" /></button>}
-              {(h.landed || h.docked || h.station) && <button onClick={() => game.interact()}>{h.docked ? 'Undock' : h.landed ? 'EVA' : 'Dock'}<K a="interact" /></button>}
+              {(h.landed || h.docked || h.station) && <button onClick={() => game.interact()}>{h.docked ? 'Undock' : h.landed ? 'EVA outside' : 'Dock'}<K a="interact" /></button>}
+              {!h.landed && !h.docked && !h.station && h.pressure === 0 && <button onClick={() => game.interact()}>Spacewalk<K a="interact" /></button>}
+              <button onClick={() => game.toggleCabin()}>Go inside<K a="cabin" /></button>
               {h.landed && h.hasRover && <button onClick={() => game.deployRover()}>Deploy rover</button>}
               {h.home && <button onClick={() => game.recover()}>Recover vessel</button>}
             </>
@@ -336,6 +348,8 @@ export function Hud({ ui }) {
       {touch && !sheet && !ui.paused && <TouchControls h={h} />}
       {!sheet && !ui.drawer && <RadioBubble radio={ui.radio} />}
       {!sheet && !ui.map && <SitePointer site={h.find} />}
+      {eva && eva.kind === 'cabin' && eva.prompt && !sheet && <div className="panel cabinprompt">{eva.nearId === 'bowl' || eva.nearId?.startsWith('crew') ? <><K a="sample" /> {eva.prompt}</> : <><K a="interact" /> {eva.prompt}</>}</div>}
+      {eva && eva.kind === 'spacewalk' && !sheet && <div className="panel cabinprompt">Tether {Math.round(eva.dist)} / 40 m{eva.dist < 12 ? ' — press F to come back in' : ''}</div>}
       {ui.portrait && !ui.portraitOk && !sheet && (
         <div className="panel rotatetip">Turn your phone sideways for the best view <span className="click" onClick={() => setUI({ portraitOk: true })}>✕</span></div>
       )}

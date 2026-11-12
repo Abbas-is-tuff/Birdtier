@@ -25,6 +25,10 @@ const SHARED = {
   travel: ['Plotting the course to {b}...', 'Next stop: {b}!'],
   arrive: ['Arrived at {b}!', 'Welcome to {b}, everybird.'],
   idle: ['Quiet up here.', 'Is it snack time yet?', 'I can see my nest from here!'],
+  cabin: ['Stretching my wings in the cabin.', 'Cosy in here!'],
+  spacewalk: ['Opening the hatch... whoa, that is a long way down!', 'Spacewalk! Nothing but stars under my feet.'],
+  window: ['Look at {b} out there!', 'Best window seat in the universe.'],
+  snack: ['Nom nom nom. Space seeds taste the same as home seeds.', 'Crunch! Refuelled.'],
 };
 
 const VOICES = {
@@ -36,6 +40,9 @@ const VOICES = {
     lowFuel: ['Fuel is getting low. Let’s not waste a single drop.'],
     idle: ['A good commander always checks the instruments. All green.', 'I miss my seed bowl... but not that much.'],
     treasure: ['Seeds! The whole flock will eat well tonight.'],
+    cabin: ["Crew, looking good. Everyone strapped in?"],
+    spacewalk: ["Going outside. Keep the lights on for me."],
+    snack: ["A commander needs his seeds."],
   },
   salman: {
     pick: ['Salman. Best bird on the team. Obviously.', 'You picked the right bird.'],
@@ -49,6 +56,9 @@ const VOICES = {
     idle: ['If anyone touches my seeds, they will regret it.', 'Bite first, ask questions later.'],
     rescue: ['About time you showed up. I was NOT scared. Let’s go.'],
     eva: ['Outside. Nobody follow me.'],
+    cabin: ["Nobody sits in MY seat."],
+    spacewalk: ["Outside. Finally, some peace and quiet."],
+    snack: ["MY seeds. Hands off. Wings off."],
   },
   cookie: {
     pick: ['Cookie here. Can we do the fast part first? Then nap?'],
@@ -60,6 +70,9 @@ const VOICES = {
     sample: ['Sample! Can I lie down on it?'],
     idle: ['Zzz... huh? I wasn’t sleeping.', 'Is the autopilot doing the work? Good.'],
     treasure: ['Seeds! I ran so fast to get them. Now I need a nap.'],
+    cabin: ["Floating is just lying down without a bed. I love it."],
+    spacewalk: ["Zoom outside! ...okay, can I come back in and nap?"],
+    snack: ["Snack, then nap. Perfect plan."],
   },
   lightning: {
     pick: ['ME? I get to fly?! Best day EVER!'],
@@ -70,6 +83,9 @@ const VOICES = {
     eva: ['Bounce bounce bounce!'],
     idle: ['Are we there yet?', 'What does this button do?', 'Can we go faster?'],
     rescue: [],
+    cabin: ["I can do a backflip in zero-g! Watch!"],
+    spacewalk: ["I’M OUTSIDE IN SPACE! THIS IS AMAZING!"],
+    window: ["Is that {b}?! It is SO big!"],
   },
   pikachu: {
     pick: ['Pikachu here. Instruments calibrated.'],
@@ -80,6 +96,8 @@ const VOICES = {
     land: ['Gentle touchdown on {b}. Now, let’s get to work.'],
     idle: ['Did you know cockatiels can whistle a whole song? Science.', 'I could study this view forever.'],
     rescue: ['You found me! My notes survived too — look at all this data!'],
+    window: ["Look at the colour of {b}’s atmosphere. Beautiful data."],
+    spacewalk: ["Checking the hull for micrometeorite marks. Fascinating."],
   },
   silver: {
     pick: ['Silver. Where are we going? Somewhere new, I hope.'],
@@ -88,6 +106,8 @@ const VOICES = {
     eva: ['Let’s go for a walk. A long one.'],
     idle: ['Wonder what’s over that hill.', 'Every planet has a secret.'],
     rescue: ['I wasn’t lost, I was exploring! ...ok, a bit lost. Thanks.'],
+    window: ["I want to explore every bit of {b}."],
+    spacewalk: ["Out here I can see everywhere I haven’t been yet."],
   },
   aziz: {
     pick: ['Aziz in the cockpit. Watch this.'],
@@ -97,6 +117,7 @@ const VOICES = {
     eva: ['Watch me jump!'],
     idle: ['I could fly this thing with my eyes closed.', 'Green feathers, red beak, best pilot.'],
     rescue: ['It’s hot down here! Get me out before my tail feathers melt!'],
+    spacewalk: ["Jet pack online. Watch these moves!"],
   },
   lemon: {
     pick: ['Lemon here! I counted the snacks. We have enough. Probably.'],
@@ -105,6 +126,7 @@ const VOICES = {
     lowFuel: ['We are running low! I told you to buy the bigger tank!'],
     idle: ['Rainbow bird in a rainbow universe!', 'Budget looks good. Let’s spend it all.'],
     rescue: ['FINALLY! I ran out of snacks three days ago!'],
+    snack: ["I counted them. 412 seeds. Now 411. Now 410."],
   },
   mango: {
     pick: ['Mango, navigator. I’ll find the way.'],
@@ -112,6 +134,7 @@ const VOICES = {
     travel: ['Course plotted to {b}. The stars agree.'],
     idle: ['See that bright star? I named it after you.', 'Space smells like... nothing. Interesting.'],
     rescue: ['I knew someone would follow my beacon. The stars told me.'],
+    window: ["I can see three constellations from here."],
   },
   coco: {
     pick: ['Coco! Coco! Let’s goooo!'],
@@ -120,6 +143,7 @@ const VOICES = {
     land: ['Can we explore? Can we? NOW?'],
     idle: ['I want to bounce on every planet!'],
     rescue: ['Yay! A ride! I was bouncing around all alone!'],
+    cabin: ["Bounce off the walls! Bounce off the ceiling!"],
   },
   mercury: {
     pick: ['M-me? Okay. I can do this. I think.'],
@@ -128,6 +152,7 @@ const VOICES = {
     land: ['I landed? I LANDED!'],
     idle: ['Is space always this big?', 'I’m the new bird. Be nice to me.'],
     rescue: ['I’m so glad you came. It was cold and I was scared.'],
+    spacewalk: ["Don’t let go of my tether! Please don’t let go!"],
   },
   orange: {
     pick: ['♪ Orange on the radio, la la la ♪'],
@@ -136,6 +161,8 @@ const VOICES = {
     land: ['♪ We have landed on {b}, tra la la ♪'],
     idle: ['♪ Twinkle twinkle little star ♪', '♪ Tweet tweet, radio check ♪'],
     rescue: ['♪ You found me, you found me! ♪'],
+    cabin: ["♪ Singing in the spaceship ♪"],
+    spacewalk: ["♪ Floating, floating, la la la ♪"],
   },
   jafar: {
     pick: ['Jafar here. Did someone pack the rice?'],
@@ -143,6 +170,8 @@ const VOICES = {
     land: ['Landed. Lunch break?'],
     idle: ['Rice. I am thinking about rice.', 'Is there rice in space? There should be.'],
     rescue: ['You came! Did you bring rice?'],
+    snack: ["Seeds are nice. But where is the RICE?"],
+    cabin: ["First stop: the kitchen. Wait, there is no kitchen?"],
   },
   snowflake: {
     pick: ['Snowflake. Systems look calm. Let’s keep them that way.'],
@@ -151,6 +180,7 @@ const VOICES = {
     land: ['Soft landing. Very peaceful.'],
     idle: ['All systems quiet. I like quiet.'],
     rescue: ['Thank you. It was very quiet here. A bit too quiet.'],
+    window: ["So peaceful out there."],
   },
 };
 

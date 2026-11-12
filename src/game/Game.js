@@ -28,6 +28,8 @@ import { line, squawk, unlockAudio } from '../crew/chatter.js';
 import { Autopilot, transferPlan, totalDv, spendDv } from './autopilot.js';
 import { generateSites, buildSite, updateBeacons, SITE_TYPES } from '../explore/sites.js';
 import { UPGRADE_BY_ID, applyCraftUpgrades, level, nextCost } from '../explore/upgrades.js';
+import { CabinWalker, SpaceWalker, ROOM } from '../surface/Walkers.js';
+import { buildCabin } from '../render/cabin.js';
 import { setUI, getUI, updateLayout } from '../ui/store.js';
 
 export const WARPS = [1, 2, 5, 10, 100, 1000, 10000, 100000];
@@ -100,6 +102,9 @@ class Game {
     this.progress = this.fixProgress({ ...newProgress(), ...(store.get('progress', null) || {}) });
     this.astroAnim = 0; this.buildAstroMesh();
     this.ap = new Autopilot(this);
+    // cabin lamps: always in the scene (switched off) so stepping inside never recompiles shaders
+    this.cabinLights = [new THREE.PointLight(0xfff1dd, 0, 9, 1.4), new THREE.PointLight(0x9fd2ff, 0, 6, 1.6)];
+    for (const l of this.cabinLights) scene.add(l);
     this.radioAt = {}; this.idleClock = 0;
     this.sites = generateSites(sys);
     for (const site of this.sites) { site.obj = this.anchor(site.body, site.dir, (site.id.length * 1.7) % 6.28); site.obj.add(buildSite(site)); }
@@ -124,7 +129,8 @@ class Game {
 
   bindInput() {
     const i = this.input, on = (a, f) => i.on(a, () => { if (this.mode === 'flight') f(); });
-    on('stage', () => { if (!this.entity && !this.paused) this.craft.activateNextStage(); });
+    on('stage', () => { if (!this.entity && !this.paused) this.stage(); });
+    on('cabin', () => this.toggleCabin());
     on('sas', () => this.toggle('sas')); on('rcs', () => this.toggle('rcs')); on('gear', () => this.toggle('gear')); on('panels', () => this.toggle('panels'));
     on('sasStab', () => this.setSas('stab')); on('sasPro', () => this.setSas('pro')); on('sasRetro', () => this.setSas('retro')); on('sasUp', () => this.setSas('up'));
     on('throttleMax', () => { if (!this.entity) this.craft.throttle = 1; });
@@ -309,7 +315,8 @@ class Game {
     this.save();
   }
   checkSites() {
-    const c = this.craft, e = this.entity, p = this.progress;
+    const c = this.craft, p = this.progress, e = this.entity && (this.entity.kind === 'astronaut' || this.entity.kind === 'rover') ? this.entity : null;
+    if (this.entity && !e) return;
     if (!c || c.destroyed) return;
     const body = e ? e.body : c.landed ? c.landed.body : null;
     if (!body) return;
@@ -322,7 +329,7 @@ class Game {
   }
   // Nearest unfound site on the body you are on or orbiting (for the HUD pointer).
   nearestSite() {
-    const c = this.craft, e = this.entity;
+    const c = this.craft, e = this.entity && (this.entity.kind === 'astronaut' || this.entity.kind === 'rover') ? this.entity : null;
     if (!c) return null;
     const body = e ? e.body : c.env.body, p = this.progress;
     const at = e ? e.worldPos(_a) : _a.copy(c.pos);
@@ -525,7 +532,7 @@ class Game {
 
   maxWarpIdx() {
     const c = this.craft;
-    if (this.entity) return 3;
+    if (this.entity) return this.entity.kind === 'spacewalk' ? 0 : this.entity.kind === 'cabin' ? 2 : 3;
     if (!c || c.destroyed) return 4;
     if (c.landed || c.docked) return WARPS.length - 1;
     if (c.thr.F > 0 || c.env.inAtmo || c.chuteOpen > 0) return 4;
@@ -558,6 +565,12 @@ class Game {
   interact() {
     const c = this.craft;
     if (!c || c.destroyed || this.paused) return;
+    if (this.entity && this.entity.kind === 'cabin') { this.cabinUse('interact'); return; }
+    if (this.entity && this.entity.kind === 'spacewalk') {
+      const d = this.entity.distToCraft();
+      if (d < c.length + 5) { this.endWalk('Back aboard — closing the hatch'); this.tether.visible = false; } else this.toast(`Fly back to the vessel to board (${d.toFixed(0)} m away)`, 'warn');
+      return;
+    }
     if (this.entity) {
       const e = this.entity, p = e.worldPos(_a);
       if (e.kind === 'rover') {
@@ -581,7 +594,7 @@ class Game {
         c.dock(s); c.refuel(); this.toast(`Docked with ${s.name} — tanks refilled`, 'good'); return;
       }
     }
-    if (!c.landed) { this.toast('EVA is only possible while landed', 'warn'); return; }
+    if (!c.landed) { this.startSpacewalk(); return; }
     const b = c.landed.body, e = new SurfaceEntity('astronaut', b, c.landed.dir, 1.2);
     e.dir.addScaledVector(_a.copy(Y).cross(e.dir).normalize(), 4 / b.radius).normalize();
     this.entity = e; this.astronaut = e; this.warpIdx = Math.min(this.warpIdx, 3);
@@ -601,7 +614,74 @@ class Game {
     this.toast('Rover deployed — go on EVA (F) and press F beside it to drive', 'good');
   }
 
+  // ---- inside the ship and spacewalks
+  crewAboard() { return this.progress.crew.filter((id) => id !== this.progress.pilot).slice(0, 3); }
+  toggleCabin() {
+    const c = this.craft;
+    if (this.mode !== 'flight' || !c || c.destroyed || this.paused) return;
+    const e = this.entity;
+    if (e && e.kind === 'cabin') { this.endWalk('Back in the pilot seat'); return; }
+    if (e) { this.toast(e.kind === 'spacewalk' ? 'Fly back to the hatch and press F to come in first' : 'Board the vessel first', 'warn'); return; }
+    this.ap.stop();
+    const crew = this.crewAboard();
+    if (this.cabin) this.r.scene.remove(this.cabin);
+    this.cabin = buildCabin(crew.map((id) => crewById(id).look));
+    this.r.scene.add(this.cabin);
+    const w = new CabinWalker(c, crew);
+    this.entity = w; this.walker = w; this.warpIdx = Math.min(this.warpIdx, 2);
+    this.rig.setMode('chase'); this.rig.startBlend(); this.rig.pitch = 0.35; this.rig.yaw = 0; this.rig.dist.cabin = 3.2;
+    this.toast('Inside the ship — W/S walk, A/D turn, Space jump/float up, Q float down, F use, V talk/eat, Enter to sit down');
+    if (w.gravity() < 0.3) setTimeout(() => this.toast('Zero gravity! You are floating.', 'good'), 600);
+    this.chatter('cabin', {}, null, true);
+  }
+  endWalk(msg) {
+    this.entity = null; this.walker = null; this.astronaut = null;
+    if (this.cabin) this.cabin.visible = false;
+    if (this.tether) this.tether.visible = false;
+    this.rig.startBlend();
+    if (msg) this.toast(msg);
+  }
+  startSpacewalk() {
+    const c = this.craft;
+    if (c.env.inAtmo) { this.toast('You can only spacewalk above the atmosphere', 'warn'); return false; }
+    if (c.thr.F > 0) { this.toast('Cut the engines before going outside', 'warn'); return false; }
+    this.ap.stop();
+    const w = new SpaceWalker(c);
+    this.entity = w; this.walker = w; this.warpIdx = 0;
+    if (this.cabin) this.cabin.visible = false;
+    if (!this.tether) {
+      this.tether = new THREE.Line(new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(), new THREE.Vector3()]), new THREE.LineBasicMaterial({ color: 0xffd28a }));
+      this.tether.frustumCulled = false; this.r.scene.add(this.tether);
+    }
+    this.tether.visible = true;
+    this.rig.setMode('chase'); this.rig.startBlend(); this.rig.pitch = 0.2; this.rig.dist.surface = Math.max(this.rig.dist.surface, 8);
+    this.toast('SPACEWALK — W/S forward/back, A/D sideways, Space up, Q down (all relative to the camera). F to come back in.');
+    this.chatter('spacewalk', {}, null, true);
+    return true;
+  }
+  // F (interact) and V (talk/eat) inside the cabin
+  cabinUse(how) {
+    const w = this.entity, c = this.craft, s = w.nearby();
+    if (how === 'interact') {
+      if (s && s.id === 'hatch') {
+        if (c.landed) { this.endWalk(); this.interact(); return; }
+        if (c.docked) { this.toast(`The hatch opens into ${c.docked.name}. Nothing to do there yet!`, 'warn'); return; }
+        this.startSpacewalk(); return;
+      }
+      if (s && s.id === 'seat') { this.endWalk('Back in the pilot seat'); return; }
+      if (s && s.id === 'window') { this.chatter('window', { b: c.env.body.name }, null, true); return; }
+      if (!s) { this.toast('Walk up to the pilot seat, the hatch, the window, the seed bowl or a crewmate', 'info'); return; }
+    }
+    if (s && s.id === 'bowl') { this.chatter('snack', {}, null, true); return; }
+    if (s && s.bird) { this.chatter('idle', {}, s.bird, true); return; }
+    if (s && s.id === 'window') { this.chatter('window', { b: c.env.body.name }, null, true); return; }
+    this.toast('Nothing to use here — walk up to something', 'info');
+  }
+
   collectSample() {
+    const e0 = this.entity;
+    if (e0 && e0.kind === 'cabin') { this.cabinUse('use'); return; }
+    if (e0 && e0.kind === 'spacewalk') { this.toast('There is nothing to sample in empty space — but what a view!', 'info'); return; }
     const e = this.entity;
     if (!e || e.kind !== 'astronaut') { this.toast('Samples are collected on EVA', 'warn'); return; }
     const biome = e.body.biomeAt(e.dir), key = `sample:${e.body.id}:${biome}`;
@@ -872,6 +952,7 @@ class Game {
       for (let i = this.cmdQueue.length - 1; i >= 0; i--) if (this.t >= this.cmdQueue[i].at) this.cmdQueue.splice(i, 1)[0].fn();
     } else { for (const s of this.sciQueue) s.at += dtGame; for (const s of this.cmdQueue) s.at += dtGame; }
     if (!c.destroyed) this.completeMissions();
+    if (c.destroyed && this.entity && (this.entity.kind === 'cabin' || this.entity.kind === 'spacewalk')) this.endWalk();
     if (c.destroyed && !getUI().lost) { this.dropWarp(); this.persist(); setUI({ lost: c.destroyReason }); }
   }
 
@@ -906,7 +987,13 @@ class Game {
     const pm = this.pilot.mods;
     e.mods = { ...pm, drive: (pm.drive || 1) * (1 + 0.3 * level(this.progress, 'rover')), jet: level(this.progress, 'jetpack') };
     const free = this.rig.current === 'free';
-    e.update(dt, { fwd: free ? 0 : inp.axis('pitchDown', 'pitchUp'), turn: free ? 0 : inp.axis('yawRight', 'yawLeft'), jump: !free && inp.is('stage') }, env);
+    env.camQuat = this.rig.quat;
+    e.update(dt, { fwd: free ? 0 : inp.axis('pitchDown', 'pitchUp'), turn: free ? 0 : inp.axis('yawRight', 'yawLeft'), jump: !free && (inp.is('stage') || (e.kind === 'spacewalk' && inp.is('rollRight'))), down: !free && inp.is('rollLeft') }, env);
+    if (e.kind === 'cabin' || e.kind === 'spacewalk') {
+      if (e.justFloated) this.toast('Zero gravity! You are floating.', 'good');
+      if (e.kind === 'spacewalk' && e.tight && !this.tightWarned) { this.tightWarned = true; this.toast('The safety tether is fully stretched (40 m)', 'warn'); } else if (e.kind === 'spacewalk' && !e.tight) this.tightWarned = false;
+      return;
+    }
     this.discoverClock = (this.discoverClock || 0) + dtReal;
     if (this.discoverClock > 1) { this.discoverClock = 0; this.discover(e.body, e.dir); }
   }
@@ -964,7 +1051,7 @@ class Game {
       const focus = e ? e.worldPos(_c) : c.pos;
       const free = rig.current === 'free';
       rig.update(dt, {
-        focus, body: this.focusBody(), craft: c, entity: e,
+        focus, body: this.focusBody(), craft: c, entity: e, room: ROOM,
         craftMid: (c.stages[0].h - c.belowOrigin) / 2,
         groundClear: e ? e.y : c.env.terrainKnown ? c.env.radarAlt + c.bottomOffset : undefined,
         move: free ? { x: inp.axis('yawRight', 'yawLeft'), z: inp.axis('pitchDown', 'pitchUp'), y: inp.axis('rollRight', 'rollLeft'), fast: inp.down.has('ShiftLeft') } : null,
@@ -989,6 +1076,7 @@ class Game {
 
     const c = this.craft, e = this.entity;
     const focus = this._focus.copy(flight ? (e ? e.worldPos(_c) : c.pos) : this.menuBody.pos);
+    rig.inCabin = !!(e && e.kind === 'cabin');
     const body = this.focusBody();
     this.nearBody = body;
     if (c && this.model) {
@@ -1002,13 +1090,31 @@ class Game {
     }
     for (const d of this.debris) { d.group.position.subVectors(d.pos, o); d.group.quaternion.copy(d.quat); }
     // surface entities
-    const showAstro = flight && this.astronaut && this.mode === 'flight';
+    const walker = this.astronaut || (this.entity && (this.entity.kind === 'cabin' || this.entity.kind === 'spacewalk') ? this.entity : null);
+    const inCabin = !!(this.entity && this.entity.kind === 'cabin' && this.mode === 'flight');
+    if (this.cabin) {
+      this.cabin.visible = inCabin;
+      if (inCabin) {
+        this.cabin.position.subVectors(c.pos, o); this.cabin.quaternion.copy(c.quat); this.cabin.updateMatrixWorld();
+        this.cabin.userData.lampPos.forEach((p, i) => this.cabinLights[i].position.copy(p).applyMatrix4(this.cabin.matrixWorld));
+        const tnow = performance.now() / 1000;
+        this.cabin.userData.crewBirds.forEach((b, i) => { b.children[0].rotation.z = Math.sin(tnow * 1.3 + i * 2) * 0.06; b.children[0].position.y = this.entity.zeroG ? 0.25 + Math.sin(tnow + i) * 0.12 : 0; });
+      }
+    }
+    if (this.model) this.model.root.visible = !inCabin;
+    this.cabinLights[0].intensity = inCabin ? 6 : 0; this.cabinLights[1].intensity = inCabin ? 2 : 0;
+    if (this.tether && this.tether.visible && this.entity && this.entity.kind === 'spacewalk') {
+      const pa = this.tether.geometry.attributes.position;
+      _b.subVectors(c.pos, o); pa.setXYZ(0, _b.x, _b.y, _b.z);
+      this.entity.worldPos(_b).sub(o); pa.setXYZ(1, _b.x, _b.y + 0.8, _b.z); pa.needsUpdate = true;
+    }
+    const showAstro = flight && walker && this.mode === 'flight';
     this.astroMesh.visible = !!showAstro;
     if (showAstro) {
-      this.astroMesh.position.copy(this.astronaut.worldPos(_a)).sub(o); this.astronaut.worldQuat(this.astroMesh.quaternion);
+      this.astroMesh.position.copy(walker.worldPos(_a)).sub(o); walker.worldQuat(this.astroMesh.quaternion);
       // waddle while walking, gentle breathing bob when standing
-      const rig = this.astroMesh.userData.rig, moving = Math.abs(this.astronaut.speed) > 0.1;
-      this.astroAnim += dt * (moving ? 9 + Math.abs(this.astronaut.speed) * 2 : 2);
+      const rig = this.astroMesh.userData.rig, moving = Math.abs(walker.speed) > 0.1 && walker.kind !== 'spacewalk';
+      this.astroAnim += dt * (moving ? 9 + Math.abs(walker.speed) * 2 : 2);
       rig.rotation.z = moving ? Math.sin(this.astroAnim) * 0.12 : 0;
       rig.position.y = moving ? Math.abs(Math.sin(this.astroAnim)) * 0.06 : Math.sin(this.astroAnim) * 0.008;
     }
@@ -1133,7 +1239,9 @@ class Game {
     let eva = null;
     if (ent) {
       const p = ent.worldPos(_b);
-      eva = { kind: ent.kind, biome: ent.body.biomeAt(ent.dir), dist: p.distanceTo(c.pos), speed: Math.abs(ent.speed), ec: ent.ec, ecCap: ent.ecCap,
+      const near = ent.kind === 'cabin' ? ent.nearby() : null;
+      eva = { kind: ent.kind, prompt: near ? near.label + (near.bird ? ` to ${crewById(near.bird).name}` : '') : null, nearId: near ? near.id : null, zeroG: !!ent.zeroG,
+        biome: ent.kind === 'cabin' ? (ent.zeroG ? 'Inside — zero gravity' : 'Inside the ship') : ent.kind === 'spacewalk' ? 'Spacewalk' : ent.body.biomeAt(ent.dir), dist: p.distanceTo(c.pos), speed: Math.abs(ent.speed), ec: ent.ec, ecCap: ent.ecCap,
         roverDist: this.rover && this.rover !== ent ? this.rover.worldPos(_c).distanceTo(p) : null };
     }
     let station = null;

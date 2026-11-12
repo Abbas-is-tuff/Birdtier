@@ -8,6 +8,7 @@ export const CAM_LABEL = { chase: 'Chase', cockpit: 'Cockpit', orbital: 'Orbital
 
 const _up = new Vector3(), _n = new Vector3(), _e = new Vector3(), _off = new Vector3(), _t = new Vector3(), _f = new Vector3();
 const _m = new Matrix4(), _q = new Quaternion(), ZERO = new Vector3(), Y = new Vector3(0, 1, 0);
+const _t2 = new Vector3(), _t3 = new Vector3(), _t4 = new Vector3(), _t5 = new Vector3();
 const RX90 = new Quaternion().setFromAxisAngle(new Vector3(1, 0, 0), Math.PI / 2);
 
 export class CameraRig {
@@ -40,6 +41,7 @@ export class CameraRig {
     const m = this.current, k = Math.exp(delta * 0.0012);
     if (m === 'chase') this.dist.chase = Math.max(6, Math.min(4000, this.dist.chase * k));
     else if (m === 'surface') this.dist.surface = Math.max(2.5, Math.min(300, this.dist.surface * k));
+    if (this.inCabin) this.dist.cabin = Math.max(0.9, Math.min(4.2, (this.dist.cabin || 3.2) * k));
     else if (m === 'orbital') this.dist.orbital = Math.max(1.15, Math.min(60, this.dist.orbital * k));
     else if (m === 'map') this.dist.map = Math.max(2.2, Math.min(4e11 / this.mapFocus.radius, this.dist.map * k));
     else if (m === 'free') this.free.off.multiplyScalar(k);
@@ -65,6 +67,20 @@ export class CameraRig {
       _t.subVectors(fb.pos, focus);
       orbitOff(this.dist.map * fb.radius, Y, _n.set(1, 0, 0), _e.set(0, 0, 1));
       lookAt(_off, ZERO, Y); off.add(_t);
+    } else if (ctx.entity && ctx.entity.kind === 'cabin') {
+      // inside the ship: orbit the bird but keep the camera inside the cabin walls
+      const c = ctx.craft, w = ctx.entity, room = ctx.room;
+      const cq = c.quat, d = Math.max(0.9, Math.min(this.dist.cabin || 3.2, 4.2));
+      const p = Math.max(-0.3, Math.min(1.2, this.pitch));
+      const target = w.localPos(_t2).add(_t3.set(0, 0.85, 0));
+      const cam = _t4.set(Math.sin(this.yaw) * Math.cos(p), Math.sin(p), Math.cos(this.yaw) * Math.cos(p)).multiplyScalar(d).add(target);
+      const rr = Math.hypot(cam.x, cam.z), maxR = room.R - 0.2;
+      if (rr > maxR) { cam.x *= maxR / rr; cam.z *= maxR / rr; }
+      cam.y = Math.max(room.floor + 0.25, Math.min(room.ceil - 0.15, cam.y));
+      const feet = w.localPos(_t5);
+      off.copy(cam).sub(feet).applyQuaternion(cq);
+      _t.copy(target).sub(feet).applyQuaternion(cq);
+      lookAt(off, _t, _f.set(0, 1, 0).applyQuaternion(cq));
     } else if (m === 'orbital') {
       _t.subVectors(body.pos, focus);
       orbitOff(this.dist.orbital * body.radius, Y, _n.set(1, 0, 0), _e.set(0, 0, 1));
