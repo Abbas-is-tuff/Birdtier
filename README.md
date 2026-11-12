@@ -92,7 +92,8 @@ Full screen is in the main menu and the pause menu (Android browsers; on iPhone,
 | F | EVA or spacewalk / board / dock / rover / use (inside) | V | Collect sample (EVA) |
 | O | Deploy science station (EVA) | Y | Run instruments |
 | B | Colony panel | Mouse drag / wheel | Orbit / zoom camera |
-| Enter | Go inside the ship / back to the seat | Q (inside, spacewalk) | Float down |
+| 5 | Tell a joke | Enter | Go inside the ship / back to the seat |
+| | | Q (inside, spacewalk) | Float down |
 
 ---
 
@@ -130,7 +131,7 @@ Two are a short walk from the launch pad. A pointer on screen shows the nearest 
 ## The crew
 
 You start with Abbas, Cookie and Lightning; eleven more birds are stranded on other worlds and join when
-rescued. Every bird talks on the radio (with its own personality and chirp) when things happen. Pick your
+rescued. Every bird talks on the radio (with its own personality and chirp) when things happen. They also crack jokes: press **😂 Joke** (key 5), wait for one while flying, or talk to a crewmate in the cabin — another bird laughs (or groans). Pick your
 pilot on the main menu or in the workshop. The pilot appears on EVA as a bird in a glass helmet and
 life-support pack (in their own colours), shows in the flight HUD, and brings one perk that changes the game's numbers.
 

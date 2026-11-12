@@ -39,6 +39,7 @@ export const ACTIONS = {
   camera: ['KeyC', 'Next camera', 'View'],
   interact: ['KeyF', 'EVA or spacewalk / board / dock / rover / use (inside)', 'Surface'],
   cabin: ['Enter', 'Go inside the ship / back to the pilot seat', 'Surface'],
+  joke: ['Digit5', 'Tell a joke', 'Surface'],
   sample: ['KeyV', 'Collect surface sample (on EVA)', 'Surface'],
   deploySci: ['KeyO', 'Deploy science station (on EVA)', 'Surface'],
   experiment: ['KeyY', 'Run all science instruments', 'Surface'],

@@ -24,7 +24,7 @@ import { MISSIONS, newProgress, activeMissions } from '../missions/missions.js';
 import { QUALITY, loadSettings, saveSettings, store, touchEnabled } from './settings.js';
 import { Input } from './input.js';
 import { crewById, mod, CREW, RESCUE_AT } from '../crew/crew.js';
-import { line, squawk, unlockAudio } from '../crew/chatter.js';
+import { line, squawk, unlockAudio, joke, laugh, giggle } from '../crew/chatter.js';
 import { Autopilot, transferPlan, totalDv, spendDv } from './autopilot.js';
 import { generateSites, buildSite, updateBeacons, SITE_TYPES } from '../explore/sites.js';
 import { UPGRADE_BY_ID, applyCraftUpgrades, level, nextCost } from '../explore/upgrades.js';
@@ -131,6 +131,7 @@ class Game {
     const i = this.input, on = (a, f) => i.on(a, () => { if (this.mode === 'flight') f(); });
     on('stage', () => { if (!this.entity && !this.paused) this.stage(); });
     on('cabin', () => this.toggleCabin());
+    on('joke', () => this.tellJoke());
     on('sas', () => this.toggle('sas')); on('rcs', () => this.toggle('rcs')); on('gear', () => this.toggle('gear')); on('panels', () => this.toggle('panels'));
     on('sasStab', () => this.setSas('stab')); on('sasPro', () => this.setSas('pro')); on('sasRetro', () => this.setSas('retro')); on('sasUp', () => this.setSas('up'));
     on('throttleMax', () => { if (!this.entity) this.craft.throttle = 1; });
@@ -208,6 +209,32 @@ class Game {
     this.radioAt[key] = now; this.idleClock = 0;
     setUI({ radio: { bird: id, text, until: now + Math.max(6500, text.length * 85), n: (getUI().radio ? getUI().radio.n : 0) + 1 } });
     if (this.settings.chirps !== false) squawk(id, 0.6);
+  }
+
+  // Put a line on the radio from a particular bird.
+  say(id, text, ms) {
+    const now = performance.now();
+    setUI({ radio: { bird: id, text, until: now + (ms || Math.max(6500, text.length * 85)), n: (getUI().radio ? getUI().radio.n : 0) + 1 } });
+    if (this.settings.chirps !== false) squawk(id, 0.6);
+  }
+  // A joke: setup, a pause, the punchline, then a crewmate laughs (or groans).
+  tellJoke(birdId) {
+    if (this.jokeTimers) this.jokeTimers.forEach(clearTimeout);
+    this.jokeTimers = [];
+    const id = birdId || this.progress.pilot, parts = joke(id);
+    // comic timing: time to read the setup, a beat, the punchline, then the reaction
+    let t = 0, last = 0;
+    parts.forEach((txt, i) => {
+      const final = i === parts.length - 1, hold = final ? 4500 : Math.max(2800, txt.length * 60);
+      last = t;
+      this.jokeTimers.push(setTimeout(() => this.say(id, txt, hold + (final ? 1500 : 300)), t));
+      t += hold;
+    });
+    t = last + 1300 + parts[parts.length - 1].length * 22;
+    const others = this.progress.crew.filter((b) => b !== id);
+    const who = others.length ? others[Math.floor(Math.random() * others.length)] : id;
+    this.jokeTimers.push(setTimeout(() => { this.say(who, laugh(who), 4200); if (this.settings.chirps !== false) giggle(who, 0.6); }, t + 200));
+    this.radioAt.idle = performance.now() + t; this.idleClock = 0;
   }
 
   // ---- autopilot and travel
@@ -673,7 +700,7 @@ class Game {
       if (!s) { this.toast('Walk up to the pilot seat, the hatch, the window, the seed bowl or a crewmate', 'info'); return; }
     }
     if (s && s.id === 'bowl') { this.chatter('snack', {}, null, true); return; }
-    if (s && s.bird) { this.chatter('idle', {}, s.bird, true); return; }
+    if (s && s.bird) { if (Math.random() < 0.7) this.tellJoke(s.bird); else this.chatter('idle', {}, s.bird, true); return; }
     if (s && s.id === 'window') { this.chatter('window', { b: c.env.body.name }, null, true); return; }
     this.toast('Nothing to use here — walk up to something', 'info');
   }
@@ -966,7 +993,7 @@ class Game {
     const low = st && st.liquid.length && st.fuelCap > 0 && st.fuel / st.fuelCap < 0.12 && c.activeStage === 0;
     if (low && !f.low) { f.low = true; this.chatter('lowFuel'); } else if (!low) f.low = false;
     this.idleClock += dtReal;
-    if (this.idleClock > 75 + Math.random() * 60 && !this.paused) this.chatter('idle');
+    if (this.idleClock > 60 + Math.random() * 50 && !this.paused) { if (Math.random() < 0.5) this.tellJoke(); else this.chatter('idle'); }
   }
 
   updateEnvironment() {

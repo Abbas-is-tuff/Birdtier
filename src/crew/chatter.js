@@ -217,3 +217,152 @@ export function squawk(birdId, volume = 0.5) {
     o.start(t); o.stop(t + 0.1);
   }
 }
+
+// ---------------------------------------------------------------- jokes
+// "setup|punchline" (a "|" is a pause for comic timing). Shared jokes any bird can tell, plus each
+// bird's own material. Told in a shuffled order so the same joke doesn't come back too soon.
+const JOKES = [
+  'Why don’t birds use the autopilot?|They prefer to wing it.',
+  'Why did the rocket lose its job?|It got fired.',
+  'What do you call a seed in space?|An astro-NUT!',
+  'What did Mars say to Saturn?|“Give me a ring sometime!”',
+  'How do astronauts plan a party?|They planet.',
+  'Why are parrots the best astronauts?|Mission control says “repeat after me”... and we actually do.',
+  'Why didn’t the Sun go to school?|It already had a million degrees.',
+  'What’s an astronaut bird’s favourite key on the keyboard?|The SPACE bar. ...And the seed bar.',
+  'Knock knock! Who’s there? Comet. Comet who?|Comet me when the snacks are ready!',
+  'What kind of music do planets sing?|Nep-TUNES!',
+  'I’m reading a book about anti-gravity.|It’s impossible to put down.',
+  'Why did the star go to school?|To get a little brighter. Unlike some birds on this ship.',
+  'Did you hear about the bird who swallowed the satellite dish?|Now he only tweets in high definition.',
+  'Mission control asked for a status report.|I said “tweet.” They said that’s not a status. I said it’s MY status.',
+  'How does the Moon cut its hair?|E-clipse it.',
+  'Why did the cockatiel bring a ladder to the launch pad?|Someone said the prices were sky-high.',
+  'What do aliens spread on their toast?|Space jam.',
+  'Why do birds fly south for the winter?|Because walking takes forever. Same reason we built rockets.',
+  'Why was the gas giant so popular?|Everybody said it was a real gas.',
+  'What’s the best thing about living in space?|No one can hear you squawk at 6am. Mission control can, though. They complained.',
+  'Why did the bird sit on the clock?|To be on time for launch. It didn’t work. The clock is now in orbit.',
+  'What do you call a bird that’s afraid of heights?|A rock. Wait, no. A penguin. Sorry, penguins.',
+  'Why did the astronaut break up with the Moon?|It needed space.',
+  'What’s a bird’s favourite planet?|Saturn. Built-in perches all the way round.',
+  'Why can’t you tell jokes on the Moon?|There’s no atmosphere. ...Get it? Like a party with no atmosphere? Tough crowd.',
+  'Why did the parrot wear a spacesuit to the dentist?|In case they found a black hole.',
+  'What did the rocket say to the launch pad?|“I’ll be back... in a few years... if the fuel works out.”',
+];
+const OWN_JOKES = {
+  abbas: [
+    'As commander I have one rule:|whoever tells a bad joke cleans the seed bowl. ...This rule starts AFTER my joke.',
+    'Mission control said “Abbas, you are cleared for liftoff.”|I said “Great! Am I also cleared for snacks?” Long silence. Very long silence.',
+    'Why do lovebirds make great commanders?|We love the crew. We love the mission. We REALLY love the snacks.',
+  ],
+  salman: [
+    'People say I’m aggressive.|I’m not aggressive. I just bite things that deserve it. Which is everything.',
+    'Why did I bite the asteroid?|It looked at me funny.',
+    'Knock knock. Who’s there? Salman. Salman who?|SALMAN WHO?! You KNOW who. Open the hatch.',
+    'What’s the difference between me and a black hole?|Sometimes light escapes from a black hole.',
+    'I’m the best bird on this ship.|That’s not a joke. That’s a fact. You may laugh at the others.',
+  ],
+  cookie: [
+    'I ran 100 metres in 2 seconds today.|Then I napped for 6 hours. It’s called balance.',
+    'I’m not lazy.|I’m in energy-saving mode. The solar panels get it.',
+    'What’s my favourite thing about zero gravity?|I can nap AND go places at the same time. Science finally did something useful.',
+    'Why did Cookie skip leg day?|Wings. Next question. Actually, no more questions. Nap time.',
+  ],
+  lightning: [
+    'Knock knock! Who’s there? Interrupting rocket. Interrupting ro—|WHOOOOOOSH!',
+    'Why did I press the big red button?|It was BIG. And RED. What did you EXPECT?!',
+    'I’m 3 months old and I’ve already been to space!|I still can’t eat a seed without dropping it, but SPACE!',
+    'What’s faster than lightning?|NOTHING! Because I’M Lightning! ...Wait, light is. Okay, light is faster. But only a bit.',
+  ],
+  pikachu: [
+    'I did an experiment: I let go of a seed in zero gravity.|Results: it is still up there. Experiment ongoing. Forever.',
+    'Why are scientists terrible at hide and seek?|We keep writing down where everyone is.',
+    'I measured the temperature of the gas giant.|The result was “too hot, too cold, too windy, go home.” Peer reviewed.',
+    'I did the maths on Cookie’s naps.|If Cookie napped any more, Cookie would technically be a pillow.',
+  ],
+  silver: [
+    'I wanted to explore every planet in the system.|Turns out you need a LOT of snacks and a very big map. I have neither.',
+    'I’m not lost.|I’m discovering where I am. Very slowly. Possibly forever.',
+    'Where do explorers go on holiday?|Somewhere new. Then we explore it. Then we need another holiday.',
+  ],
+  aziz: [
+    'Why do ringnecks make the best pilots?|We come with a built-in seatbelt. Look at my neck.',
+    'I land so softly...|the ground sends me a thank-you card.',
+    'They asked me to fly “by the book.”|So I did a barrel roll and read the book upside down.',
+  ],
+  lemon: [
+    'Why am I so colourful?|I spilled every paint on the space station. I’m still paying for it.',
+    'I asked our budget how it was doing.|It just said “ouch.”',
+    'I counted every seed on this ship.|Then Jafar walked in and now I have to start again.',
+  ],
+  mango: [
+    'I named a star after you!|It’s very small, very far away, and slightly on fire. Just like your landings.',
+    'I’m the navigator.|So when we’re lost, it’s technically my fault. Which is why I blame the map.',
+  ],
+  coco: [
+    'Why did I bounce on the moon?|Because I could! Next question! BOUNCE!',
+    'I’m a rainbow lorikeet in space.|Which makes me a rainbow in space. Which makes me the prettiest thing in space. You’re welcome.',
+  ],
+  mercury: [
+    'My name is Mercury, like the planet closest to the Sun.|Which explains why I’m sweating. Is it hot in here or is it just me?',
+    'I’m the new bird.|Yesterday I asked where the bathroom was. Salman bit me. I still don’t know where the bathroom is.',
+  ],
+  orange: [
+    '♪ This next song is about gravity ♪|♪ It’s a real downer ♪',
+    '♪ I tried to sing in a vacuum ♪|♪ ............ ♪ (that was my best performance)',
+    'Why do canaries make great radio operators?|We were born to tweet over the airwaves.',
+  ],
+  jafar: [
+    'What’s my favourite space food?|Rice. What’s my second favourite?|Also rice.',
+    'Why did I bring a rice cooker to space?|In case of emergency. Every meal is an emergency.',
+    'They told me space is full of stars.|I asked if any of them were rice. Nobody answered. Suspicious.',
+  ],
+  snowflake: [
+    'Why am I always so calm?|I’m a snowflake. I chill.',
+    'Want to hear a cold joke?|Ice to meet you.',
+  ],
+};
+const LAUGHS = {
+  abbas: ['Hahaha! Good one, crew.', 'Ha! That’s going in the mission log.'],
+  salman: ['...Heh. That was okay. Tell anyone I laughed and I’ll bite you.', 'Hmph. ...Hehehe. NO. I didn’t laugh.'],
+  cookie: ['Haha... *yawn*... haha. Funny. Can I sleep now?', 'Hehe... so funny... zzz...'],
+  lightning: ['HAHAHAHAHA! I DON’T GET IT BUT HAHAHAHAHA!', 'AGAIN! TELL IT AGAIN!'],
+  pikachu: ['Statistically, that was funny. Ha. Ha.', 'Hehe! Adding that to my research.'],
+  silver: ['Ha! I’m stealing that one.', 'Hahaha, classic!'],
+  aziz: ['Ha! Almost as smooth as my landings.', 'Hahaha! Okay, okay, that was good.'],
+  lemon: ['HAHA! I’d pay to hear that again. Well... a little bit.', 'Hahahaha! My feathers hurt!'],
+  mango: ['*giggles in navigator*', 'Hehe! The stars are laughing too.'],
+  coco: ['Hahaha! Bounce bounce hahaha!', 'HAHA! *falls off perch*'],
+  mercury: ['Hehe... wait, was that about me?', 'Haha! I laughed! Did I laugh right?'],
+  orange: ['♪ Ha ha ha ha haaaa ♪', '♪ Tee-hee-hee ♪'],
+  jafar: ['Haha! Funnier than rice. Barely.', 'Hahaha! That was nearly as good as rice.'],
+  snowflake: ['*quiet, peaceful chuckle*', 'Hehe. Very nice.'],
+};
+const GROANS = ['Boooooo! ...Okay, that was a bit good.', 'Ugh. That was terrible. I loved it.', '*facewing*', 'Who let this bird near the radio?'];
+
+const bags = {};
+function draw(key, pool) {
+  if (!bags[key] || !bags[key].length) { bags[key] = pool.slice(); for (let i = bags[key].length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [bags[key][i], bags[key][j]] = [bags[key][j], bags[key][i]]; } }
+  return bags[key].pop();
+}
+// A joke for this bird: usually one of its own, sometimes a shared one. Returns the parts to say in order.
+export function joke(birdId) {
+  const own = OWN_JOKES[birdId] || [];
+  const text = own.length && Math.random() < 0.55 ? draw('own:' + birdId, own) : draw('shared', JOKES);
+  return text.split('|');
+}
+export function laugh(birdId) {
+  return Math.random() < 0.22 ? draw('groan', GROANS) : draw('laugh:' + birdId, LAUGHS[birdId] || LAUGHS.abbas);
+}
+// Laughing sound: a quick run of rising chirps.
+export function giggle(birdId, volume = 0.5) {
+  if (!ctx || ctx.state !== 'running' || volume <= 0) return;
+  const base = 1300 * (PITCH[birdId] || 1), now = ctx.currentTime;
+  for (let i = 0; i < 5; i++) {
+    const t = now + i * 0.09, o = ctx.createOscillator(), gn = ctx.createGain(), f0 = base * (1 + (i % 2) * 0.25);
+    o.type = 'triangle'; o.frequency.setValueAtTime(f0, t); o.frequency.exponentialRampToValueAtTime(f0 * 1.3, t + 0.05);
+    gn.gain.setValueAtTime(0.0001, t); gn.gain.exponentialRampToValueAtTime(0.1 * volume, t + 0.01); gn.gain.exponentialRampToValueAtTime(0.0001, t + 0.07);
+    o.connect(gn).connect(ctx.destination); o.start(t); o.stop(t + 0.08);
+  }
+}

@@ -299,14 +299,17 @@ export function Hud({ ui }) {
               <button className={eva.prompt && !eva.nearId?.startsWith('crew') && eva.nearId !== 'bowl' ? 'primary' : ''} onClick={() => game.interact()}>{eva.prompt && !eva.nearId?.startsWith('crew') && eva.nearId !== 'bowl' ? eva.prompt : 'Use'}<K a="interact" /></button>
               <button className={eva.nearId === 'bowl' || eva.nearId?.startsWith('crew') ? 'primary' : ''} onClick={() => game.collectSample()}>{eva.nearId === 'bowl' ? 'Eat seeds' : eva.nearId?.startsWith('crew') ? eva.prompt : 'Talk / eat'}<K a="sample" /></button>
               <button onClick={() => game.toggleCabin()}>Back to seat<K a="cabin" /></button>
+              <button onClick={() => game.tellJoke()}>😂 Joke<K a="joke" /></button>
             </>
           ) : eva && eva.kind === 'spacewalk' ? (
             <>
               <button className={eva.dist < 12 ? 'primary' : ''} onClick={() => game.interact()}>Come back in ({Math.round(eva.dist)} m)<K a="interact" /></button>
+              <button onClick={() => game.tellJoke()}>😂 Joke<K a="joke" /></button>
             </>
           ) : eva ? (
             <>
               <button onClick={() => game.interact()}>{eva.kind === 'rover' ? 'Leave rover' : eva.roverDist !== null && eva.roverDist < 6 ? 'Drive rover' : 'Board vessel'}<K a="interact" /></button>
+              <button onClick={() => game.tellJoke()}>😂 Joke<K a="joke" /></button>
               {eva.kind === 'astronaut' && <><button onClick={() => game.collectSample()}>Collect sample<K a="sample" /></button>
                 <button onClick={() => game.deploySci()}>Deploy science station<K a="deploySci" /></button></>}
             </>
@@ -327,6 +330,7 @@ export function Hud({ ui }) {
               {(h.landed || h.docked || h.station) && <button onClick={() => game.interact()}>{h.docked ? 'Undock' : h.landed ? 'EVA outside' : 'Dock'}<K a="interact" /></button>}
               {!h.landed && !h.docked && !h.station && h.pressure === 0 && <button onClick={() => game.interact()}>Spacewalk<K a="interact" /></button>}
               <button onClick={() => game.toggleCabin()}>Go inside<K a="cabin" /></button>
+              <button onClick={() => game.tellJoke()}>😂 Joke<K a="joke" /></button>
               {h.landed && h.hasRover && <button onClick={() => game.deployRover()}>Deploy rover</button>}
               {h.home && <button onClick={() => game.recover()}>Recover vessel</button>}
             </>
